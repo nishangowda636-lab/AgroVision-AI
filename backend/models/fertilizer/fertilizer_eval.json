@@ -1,0 +1,198 @@
+{
+  "classifier_name": "Gradient Boosting Classifier",
+  "test_accuracy": 0.9675,
+  "test_precision": 0.9676928496792339,
+  "test_recall": 0.9675,
+  "test_f1": 0.9673684099813036,
+  "labels": [
+    "10:26:26 Complex Fertilizer",
+    "13:00:45 (Potassium Nitrate) / Micronutrient Spray",
+    "19:19:19 Complex + Farmyard Manure",
+    "Agricultural Lime + Organic Compost",
+    "DAP (Di-Ammonium Phosphate 18-46-0)",
+    "Gypsum + Ammonium Sulphate",
+    "Muriate of Potash (MOP 60% K2O)",
+    "Neem-Coated Urea (46% N)",
+    "Organic Compost / Vermicompost Maintenance",
+    "Single Super Phosphate (SSP 16% P2O5)",
+    "Urea + MOP (Muriate of Potash 0-0-60)"
+  ],
+  "confusion_matrix": [
+    [
+      284,
+      0,
+      3,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0,
+      11,
+      0
+    ],
+    [
+      0,
+      121,
+      0,
+      0,
+      0,
+      0,
+      2,
+      3,
+      0,
+      0,
+      0
+    ],
+    [
+      3,
+      0,
+      269,
+      0,
+      10,
+      0,
+      5,
+      4,
+      0,
+      5,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      123,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      0,
+      350,
+      0,
+      0,
+      5,
+      0,
+      9,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      126,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      5,
+      3,
+      0,
+      0,
+      0,
+      477,
+      0,
+      5,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0,
+      0,
+      1,
+      0,
+      0,
+      612,
+      4,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      1,
+      244,
+      1,
+      0
+    ],
+    [
+      2,
+      0,
+      0,
+      0,
+      4,
+      0,
+      0,
+      0,
+      3,
+      479,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      11
+    ]
+  ],
+  "total_records": 16000,
+  "train_samples": 12800,
+  "test_samples": 3200,
+  "benchmark_classification": {
+    "Random Forest Classifier": {
+      "mean_cv_accuracy": 0.8990625,
+      "std_cv": 0.004116231210099831
+    },
+    "Extra Trees Classifier": {
+      "mean_cv_accuracy": 0.884453125,
+      "std_cv": 0.0023489525591207736
+    },
+    "Gradient Boosting Classifier": {
+      "mean_cv_accuracy": 0.959765625,
+      "std_cv": 0.004796900447815248
+    },
+    "Decision Tree Classifier": {
+      "mean_cv_accuracy": 0.872421875,
+      "std_cv": 0.009025381960407544
+    }
+  },
+  "top_feature_importances": {
+    "num__nitrogen": 0.24608350734072568,
+    "num__potassium": 0.21510786282416178,
+    "num__phosphorus": 0.2090052428523073,
+    "num__ph": 0.11176970078907726,
+    "cat__crop_stage_Maturation / Harvest": 0.04467631150118591,
+    "cat__crop_stage_Initial / Seedling": 0.02029595173378031,
+    "cat__crop_stage_Vegetative Growth": 0.016886577364080987,
+    "cat__crop_stage_Fruiting / Grain Filling": 0.012606204061993758,
+    "cat__crop_Groundnut": 0.012019230953116574,
+    "cat__crop_Soyabean": 0.009635700904871711
+  }
+}

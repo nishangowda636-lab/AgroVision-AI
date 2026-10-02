@@ -1,0 +1,14 @@
+{
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "globals": {
+    "SpeechSynthesisUtterance": "readonly",
+    "SpeechRecognition": "readonly",
+    "webkitSpeechRecognition": "readonly"
+  },
+  "rules": {
+    "no-undef": "error"
+  }
+}

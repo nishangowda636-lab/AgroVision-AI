@@ -1,0 +1,317 @@
+{
+  "categorical_features": [
+    "crop",
+    "soil_type",
+    "crop_stage",
+    "irrigation_method"
+  ],
+  "numeric_features": [
+    "soil_moisture",
+    "temperature",
+    "humidity",
+    "rainfall",
+    "rain_probability",
+    "farm_area"
+  ],
+  "supported_crops": [
+    "Arhar/Tur",
+    "Bajra",
+    "Banana",
+    "Barley",
+    "Brinjal",
+    "Cabbage",
+    "Chilli",
+    "Coffee",
+    "Cotton",
+    "Gram",
+    "Groundnut",
+    "Jowar",
+    "Maize",
+    "Moong(Green Gram)",
+    "Mustard",
+    "Onion",
+    "Potato",
+    "Rice",
+    "Sesamum",
+    "Soyabean",
+    "Sugarcane",
+    "Sunflower",
+    "Tomato",
+    "Urad",
+    "Wheat"
+  ],
+  "supported_soils": [
+    "Alluvial",
+    "Black Cotton Soil",
+    "Laterite",
+    "Loam",
+    "Red Sandy Loam"
+  ],
+  "supported_stages": [
+    "Initial / Seedling",
+    "Vegetative Growth",
+    "Flowering / Tillering",
+    "Fruiting / Grain Filling",
+    "Maturation / Harvest"
+  ],
+  "supported_methods": [
+    "Drip Irrigation",
+    "Sprinkler System",
+    "Canal / Flood",
+    "Rainfed"
+  ],
+  "crops_info": {
+    "Tomato": {
+      "root_depth_m": 0.45,
+      "kc_init": 0.6,
+      "kc_veg": 0.85,
+      "kc_mid": 1.15,
+      "kc_end": 0.8,
+      "moist_opt": 65,
+      "moist_crit": 45
+    },
+    "Potato": {
+      "root_depth_m": 0.4,
+      "kc_init": 0.5,
+      "kc_veg": 0.8,
+      "kc_mid": 1.15,
+      "kc_end": 0.75,
+      "moist_opt": 70,
+      "moist_crit": 50
+    },
+    "Rice": {
+      "root_depth_m": 0.35,
+      "kc_init": 1.05,
+      "kc_veg": 1.15,
+      "kc_mid": 1.25,
+      "kc_end": 0.95,
+      "moist_opt": 85,
+      "moist_crit": 70
+    },
+    "Wheat": {
+      "root_depth_m": 0.6,
+      "kc_init": 0.4,
+      "kc_veg": 0.75,
+      "kc_mid": 1.15,
+      "kc_end": 0.4,
+      "moist_opt": 60,
+      "moist_crit": 40
+    },
+    "Sugarcane": {
+      "root_depth_m": 0.9,
+      "kc_init": 0.5,
+      "kc_veg": 0.9,
+      "kc_mid": 1.25,
+      "kc_end": 0.75,
+      "moist_opt": 75,
+      "moist_crit": 55
+    },
+    "Maize": {
+      "root_depth_m": 0.6,
+      "kc_init": 0.4,
+      "kc_veg": 0.8,
+      "kc_mid": 1.15,
+      "kc_end": 0.6,
+      "moist_opt": 65,
+      "moist_crit": 45
+    },
+    "Cotton": {
+      "root_depth_m": 0.8,
+      "kc_init": 0.45,
+      "kc_veg": 0.75,
+      "kc_mid": 1.2,
+      "kc_end": 0.65,
+      "moist_opt": 60,
+      "moist_crit": 40
+    },
+    "Groundnut": {
+      "root_depth_m": 0.5,
+      "kc_init": 0.4,
+      "kc_veg": 0.7,
+      "kc_mid": 1.05,
+      "kc_end": 0.6,
+      "moist_opt": 55,
+      "moist_crit": 38
+    },
+    "Gram": {
+      "root_depth_m": 0.5,
+      "kc_init": 0.35,
+      "kc_veg": 0.65,
+      "kc_mid": 1.0,
+      "kc_end": 0.35,
+      "moist_opt": 50,
+      "moist_crit": 35
+    },
+    "Onion": {
+      "root_depth_m": 0.3,
+      "kc_init": 0.5,
+      "kc_veg": 0.75,
+      "kc_mid": 1.05,
+      "kc_end": 0.75,
+      "moist_opt": 70,
+      "moist_crit": 50
+    },
+    "Mustard": {
+      "root_depth_m": 0.55,
+      "kc_init": 0.35,
+      "kc_veg": 0.7,
+      "kc_mid": 1.05,
+      "kc_end": 0.35,
+      "moist_opt": 55,
+      "moist_crit": 38
+    },
+    "Soyabean": {
+      "root_depth_m": 0.55,
+      "kc_init": 0.4,
+      "kc_veg": 0.75,
+      "kc_mid": 1.15,
+      "kc_end": 0.5,
+      "moist_opt": 60,
+      "moist_crit": 42
+    },
+    "Banana": {
+      "root_depth_m": 0.7,
+      "kc_init": 0.7,
+      "kc_veg": 1.0,
+      "kc_mid": 1.2,
+      "kc_end": 1.0,
+      "moist_opt": 80,
+      "moist_crit": 60
+    },
+    "Chilli": {
+      "root_depth_m": 0.4,
+      "kc_init": 0.5,
+      "kc_veg": 0.8,
+      "kc_mid": 1.1,
+      "kc_end": 0.8,
+      "moist_opt": 65,
+      "moist_crit": 45
+    },
+    "Brinjal": {
+      "root_depth_m": 0.45,
+      "kc_init": 0.5,
+      "kc_veg": 0.8,
+      "kc_mid": 1.15,
+      "kc_end": 0.8,
+      "moist_opt": 65,
+      "moist_crit": 45
+    },
+    "Cabbage": {
+      "root_depth_m": 0.35,
+      "kc_init": 0.5,
+      "kc_veg": 0.75,
+      "kc_mid": 1.05,
+      "kc_end": 0.9,
+      "moist_opt": 70,
+      "moist_crit": 50
+    },
+    "Barley": {
+      "root_depth_m": 0.55,
+      "kc_init": 0.4,
+      "kc_veg": 0.75,
+      "kc_mid": 1.15,
+      "kc_end": 0.4,
+      "moist_opt": 55,
+      "moist_crit": 38
+    },
+    "Jowar": {
+      "root_depth_m": 0.65,
+      "kc_init": 0.35,
+      "kc_veg": 0.75,
+      "kc_mid": 1.1,
+      "kc_end": 0.55,
+      "moist_opt": 55,
+      "moist_crit": 38
+    },
+    "Bajra": {
+      "root_depth_m": 0.6,
+      "kc_init": 0.35,
+      "kc_veg": 0.7,
+      "kc_mid": 1.05,
+      "kc_end": 0.5,
+      "moist_opt": 50,
+      "moist_crit": 35
+    },
+    "Moong(Green Gram)": {
+      "root_depth_m": 0.45,
+      "kc_init": 0.35,
+      "kc_veg": 0.65,
+      "kc_mid": 1.0,
+      "kc_end": 0.35,
+      "moist_opt": 50,
+      "moist_crit": 35
+    },
+    "Urad": {
+      "root_depth_m": 0.45,
+      "kc_init": 0.35,
+      "kc_veg": 0.65,
+      "kc_mid": 1.0,
+      "kc_end": 0.35,
+      "moist_opt": 50,
+      "moist_crit": 35
+    },
+    "Arhar/Tur": {
+      "root_depth_m": 0.75,
+      "kc_init": 0.4,
+      "kc_veg": 0.75,
+      "kc_mid": 1.1,
+      "kc_end": 0.45,
+      "moist_opt": 55,
+      "moist_crit": 38
+    },
+    "Sunflower": {
+      "root_depth_m": 0.7,
+      "kc_init": 0.4,
+      "kc_veg": 0.8,
+      "kc_mid": 1.15,
+      "kc_end": 0.45,
+      "moist_opt": 60,
+      "moist_crit": 40
+    },
+    "Sesamum": {
+      "root_depth_m": 0.5,
+      "kc_init": 0.35,
+      "kc_veg": 0.7,
+      "kc_mid": 1.05,
+      "kc_end": 0.35,
+      "moist_opt": 50,
+      "moist_crit": 35
+    },
+    "Coffee": {
+      "root_depth_m": 0.9,
+      "kc_init": 0.8,
+      "kc_veg": 0.9,
+      "kc_mid": 1.05,
+      "kc_end": 0.9,
+      "moist_opt": 70,
+      "moist_crit": 50
+    }
+  },
+  "soils_info": {
+    "Loam": {
+      "field_capacity": 30.0,
+      "wilting_point": 12.0,
+      "whc_rating": "Medium-High"
+    },
+    "Red Sandy Loam": {
+      "field_capacity": 22.0,
+      "wilting_point": 8.0,
+      "whc_rating": "Medium-Low"
+    },
+    "Black Cotton Soil": {
+      "field_capacity": 42.0,
+      "wilting_point": 20.0,
+      "whc_rating": "Very High"
+    },
+    "Alluvial": {
+      "field_capacity": 32.0,
+      "wilting_point": 13.0,
+      "whc_rating": "High"
+    },
+    "Laterite": {
+      "field_capacity": 20.0,
+      "wilting_point": 7.0,
+      "whc_rating": "Low"
+    }
+  }
+}

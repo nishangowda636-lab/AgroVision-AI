@@ -1,0 +1,30 @@
+{
+  "model_name": "AgroVision Smart Irrigation Decision & Volume Engine",
+  "version": "1.0.0",
+  "classifier_model_type": "Gradient Boosting Classifier",
+  "regressor_model_type": "Extra Trees Regressor",
+  "dataset": "FAO-56 Crop Water Depletion Telemetry (15,000 records)",
+  "training_date": "2026-09-22",
+  "framework": "scikit-learn 1.9.0",
+  "features": [
+    "crop",
+    "soil_type",
+    "growth_stage",
+    "irrigation_method",
+    "soil_moisture_pct",
+    "temperature_c",
+    "relative_humidity_pct",
+    "rainfall_forecast_mm",
+    "rain_probability_pct",
+    "farm_size_acres"
+  ],
+  "targets": [
+    "Irrigation Required (Binary)",
+    "Water Volume (Litres)"
+  ],
+  "metrics": {
+    "classifier_test_accuracy_pct": 99.27,
+    "classifier_macro_f1_pct": 99.27,
+    "regressor_r2_score": 0.981
+  }
+}

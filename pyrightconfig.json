@@ -1,0 +1,20 @@
+{
+  "include": [
+    "backend"
+  ],
+  "exclude": [
+    "backend/raw_pv"
+  ],
+  "extraPaths": [
+    "backend"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportDeprecated": "none",
+  "reportOptionalMemberAccess": "none"
+}

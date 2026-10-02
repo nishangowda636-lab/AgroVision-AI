@@ -1,0 +1,25 @@
+{
+  "model_name": "AgroVision Crop Recommendation Champion Model",
+  "version": "1.0.0",
+  "model_type": "Random Forest Classifier",
+  "dataset": "Canonical Agricultural Crop Dataset (2,200 records)",
+  "training_date": "2026-09-22",
+  "framework": "scikit-learn 1.9.0",
+  "features": [
+    "N",
+    "P",
+    "K",
+    "temperature",
+    "humidity",
+    "ph",
+    "rainfall"
+  ],
+  "classes_count": 22,
+  "metrics": {
+    "test_accuracy_pct": 99.55,
+    "macro_f1_pct": 99.55,
+    "macro_precision_pct": 99.58,
+    "macro_recall_pct": 99.55
+  },
+  "target": "Recommended Crop Species"
+}

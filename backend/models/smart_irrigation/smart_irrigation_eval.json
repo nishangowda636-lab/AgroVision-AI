@@ -1,0 +1,65 @@
+{
+  "classifier_name": "Gradient Boosting Classifier",
+  "test_accuracy": 0.9833333333333333,
+  "test_precision": 0.9673123486682809,
+  "test_recall": 0.9720194647201946,
+  "test_f1": 0.9696601941747572,
+  "confusion_matrix": [
+    [
+      2151,
+      27
+    ],
+    [
+      23,
+      799
+    ]
+  ],
+  "regressor_name": "Gradient Boosting Regressor",
+  "test_r2": 0.9161788086567851,
+  "test_mae_litres": 381112.4232174387,
+  "test_rmse_litres": 1018044.6049300502,
+  "total_records": 15000,
+  "train_samples": 12000,
+  "test_samples": 3000,
+  "benchmark_classification": {
+    "Extra Trees Classifier": {
+      "mean_cv_accuracy": 0.9325833333333333,
+      "std_cv": 0.0029744280495957683
+    },
+    "Random Forest Classifier": {
+      "mean_cv_accuracy": 0.9479166666666666,
+      "std_cv": 0.008341662504161466
+    },
+    "Gradient Boosting Classifier": {
+      "mean_cv_accuracy": 0.9813333333333333,
+      "std_cv": 0.003221024681681282
+    },
+    "Decision Tree Classifier": {
+      "mean_cv_accuracy": 0.9683333333333334,
+      "std_cv": 0.0035059473279937473
+    }
+  },
+  "benchmark_regression": {
+    "Extra Trees Regressor": {
+      "mean_cv_r2": 0.8781490038387755
+    },
+    "Random Forest Regressor": {
+      "mean_cv_r2": 0.8439544998350827
+    },
+    "Gradient Boosting Regressor": {
+      "mean_cv_r2": 0.9051924352076364
+    }
+  },
+  "top_feature_importances": {
+    "num__soil_moisture": 0.5411198131638659,
+    "num__rain_probability": 0.3007347984843265,
+    "num__rainfall": 0.05720100761969977,
+    "num__temperature": 0.012802005440828315,
+    "cat__crop_Sugarcane": 0.01234871163091809,
+    "cat__crop_Banana": 0.010670007980258599,
+    "cat__crop_Cabbage": 0.00882158967266689,
+    "cat__crop_Rice": 0.008439369878036044,
+    "num__humidity": 0.00760177940677974,
+    "cat__crop_Potato": 0.006545991789184653
+  }
+}

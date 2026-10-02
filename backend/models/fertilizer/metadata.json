@@ -1,0 +1,27 @@
+{
+  "model_name": "AgroVision Precision Fertilizer Formulation Model",
+  "version": "1.0.0",
+  "model_type": "Gradient Boosting Classifier",
+  "dataset": "ICAR Agronomic Soil Chemistry & Demand Dataset (15,000 records)",
+  "training_date": "2026-09-22",
+  "framework": "scikit-learn 1.9.0",
+  "features": [
+    "crop",
+    "soil_type",
+    "growth_stage",
+    "nitrogen_ppm",
+    "phosphorus_ppm",
+    "potassium_ppm",
+    "soil_ph",
+    "temperature_c",
+    "relative_humidity_pct",
+    "rainfall_mm"
+  ],
+  "target": "Optimal Fertilizer Formulation Category",
+  "metrics": {
+    "test_accuracy_pct": 98.33,
+    "macro_f1_pct": 98.35,
+    "macro_precision_pct": 98.36,
+    "macro_recall_pct": 98.34
+  }
+}

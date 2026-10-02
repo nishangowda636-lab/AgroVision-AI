@@ -1,0 +1,245 @@
+@import 'leaflet/dist/leaflet.css';
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@theme {
+  --color-farm-bg: #08120E;
+  --color-farm-surface: #0E1E18;
+  --color-farm-surface-hover: #13271F;
+  --color-farm-surface-elevated: #162E25;
+  --color-farm-border: #1B382D;
+  --color-farm-border-hover: #265040;
+  
+  --color-farm-primary: #0A2E20;
+  --color-farm-emerald: #10B981;
+  --color-farm-leaf: #22C55E;
+  --color-farm-teal: #14B8A6;
+  --color-farm-amber: #F59E0B;
+  --color-farm-rose: #EF4444;
+  
+  --color-farm-text: #F3F7F5;
+  --color-farm-text-secondary: #8FA59B;
+  --color-farm-text-muted: #577366;
+}
+
+body {
+  background-color: #08120E;
+  color: #F3F7F5;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.015em;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Digital Farm Operating System Card Classes */
+.os-card {
+  background-color: #0E1E18;
+  border: 1px solid #1B382D;
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.os-card:hover {
+  background-color: #11261F;
+  border-color: #244C3D;
+}
+
+.os-card-elevated {
+  background-color: #13271F;
+  border: 1px solid #1F4235;
+  border-radius: 1.25rem;
+}
+
+.os-card-interactive {
+  background-color: #0E1E18;
+  border: 1px solid #1B382D;
+  border-radius: 1rem;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.os-card-interactive:hover {
+  background-color: #12251E;
+  border-color: #10B981;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.45);
+}
+
+/* Form Inputs */
+.os-input {
+  background-color: #0A1612;
+  border: 1px solid #1B382D;
+  color: #F3F7F5;
+  border-radius: 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.os-input:focus {
+  border-color: #10B981;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+/* Buttons */
+.os-btn-primary {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #061811;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.18s ease;
+}
+
+.os-btn-primary:hover {
+  background: linear-gradient(135deg, #22C55E 0%, #10B981 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.os-btn-primary:active {
+  transform: translateY(0);
+}
+
+.os-btn-secondary {
+  background-color: #13271F;
+  border: 1px solid #1B382D;
+  color: #F3F7F5;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.18s ease;
+}
+
+.os-btn-secondary:hover {
+  background-color: #183329;
+  border-color: #244C3D;
+  color: #FFFFFF;
+}
+
+/* Sidebar Fixed Dedicated Logo Header */
+.sidebar-logo {
+  height: 118px;
+  min-height: 110px;
+  max-height: 125px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-farm-border, #1B382D);
+  background-color: var(--color-farm-bg, #08120E);
+}
+
+.sidebar-logo img {
+  max-height: 96px;
+  width: auto;
+  max-width: 155px;
+  object-fit: contain;
+  display: block;
+  margin: auto;
+}
+
+/* Skeleton Loading Shimmer */
+@keyframes os-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #0E1E18 0%,
+    #172E24 50%,
+    #0E1E18 100%
+  );
+  background-size: 200% 100%;
+  animation: os-shimmer 1.8s infinite ease-in-out;
+  border-radius: 0.75rem;
+}
+
+/* Telemetry Live Indicator Dot */
+@keyframes live-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.live-dot {
+  animation: live-pulse 2s infinite ease-in-out;
+}
+
+/* Leaflet Map Custom Styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  z-index: 10;
+  background-color: #08120E !important;
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #08120E;
+}
+::-webkit-scrollbar-thumb {
+  background: #172E24;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10B981;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Waveform Audio Speaking Animation */
+@keyframes audio-wave {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 16px;
+  }
+}
+
+.audio-bar-1 { animation: audio-wave 1s infinite 0.1s ease-in-out; }
+.audio-bar-2 { animation: audio-wave 1s infinite 0.3s ease-in-out; }
+.audio-bar-3 { animation: audio-wave 1s infinite 0.2s ease-in-out; }
+.audio-bar-4 { animation: audio-wave 1s infinite 0.4s ease-in-out; }
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

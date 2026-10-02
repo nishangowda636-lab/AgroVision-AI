@@ -1,0 +1,25 @@
+{
+  "model_name": "AgroVision Precision Crop Yield Regressor",
+  "version": "1.0.0",
+  "model_type": "Extra Trees Regressor",
+  "dataset": "Indian Agricultural Crop Yield Benchmark (19,000+ records)",
+  "training_date": "2026-09-22",
+  "framework": "scikit-learn 1.9.0",
+  "categorical_features": [
+    "Crop",
+    "Season",
+    "State"
+  ],
+  "numerical_features": [
+    "Area",
+    "Annual_Rainfall",
+    "Fertilizer",
+    "Pesticide"
+  ],
+  "target": "Yield (tonnes/hectare)",
+  "metrics": {
+    "test_r2_score": 0.9505,
+    "test_mae_tonnes_per_ha": 0.9301,
+    "test_rmse_tonnes_per_ha": 2.4353
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "include": [
+    "app"
+  ],
+  "extraPaths": [
+    "."
+  ],
+  "typeCheckingMode": "basic",
+  "reportGeneralTypeIssues": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportDeprecated": "none",
+  "reportOptionalMemberAccess": "none"
+}
