@@ -11,12 +11,10 @@ from app.schemas.schemas import DiseaseDetectionOut, ModelStatusOut
 from app.utils.auth import get_current_user
 from app.ai.disease_service import analyze_plant_image, analyze_multi_plant_images
 from app.ai.real_disease_model import get_model_status
+from app.utils.storage import UPLOAD_DIR
 
 router = APIRouter(prefix="/api/disease", tags=["Disease Detection"])
 crop_health_router = APIRouter(prefix="/api/crop-health", tags=["Crop Health AI"])
-
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def _get_farm_weather_quick(lat: float, lon: float) -> dict:
     try:

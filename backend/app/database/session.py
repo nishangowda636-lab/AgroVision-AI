@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import tempfile
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from dotenv import load_dotenv
@@ -10,7 +11,14 @@ BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 DEFAULT_DB_PATH = os.path.join(BACKEND_DIR, "agrovision.db").replace("\\", "/")
 
 raw_db_url = os.getenv("DATABASE_URL")
-if not raw_db_url or raw_db_url.strip() in ("sqlite:///./agrovision.db", "sqlite:///agrovision.db"):
+uses_default_db = not raw_db_url or raw_db_url.strip() in (
+    "sqlite:///./agrovision.db",
+    "sqlite:///agrovision.db",
+)
+if uses_default_db and os.getenv("VERCEL"):
+    temp_db_path = os.path.join(tempfile.gettempdir(), "agrovision.db").replace("\\", "/")
+    DATABASE_URL = f"sqlite:///{temp_db_path}"
+elif uses_default_db:
     DATABASE_URL = f"sqlite:///{DEFAULT_DB_PATH}"
 else:
     DATABASE_URL = raw_db_url

@@ -1,4 +1,3 @@
-import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -7,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database.session import engine, Base, run_auto_migrations
+from app.utils.storage import UPLOAD_DIR
 from app.routers import (
     auth, farms, weather, sensors, disease, irrigation, smart_irrigation,
     fertilizer, fertilizer_recommendation, crops, yield_api, market_prices,
@@ -35,8 +35,6 @@ app.add_middleware(
 )
 
 # Static file serving for image uploads
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/static/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Mount Routers
