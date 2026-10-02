@@ -1117,13 +1117,12 @@ def analyze_plant_image(
     # - crop_disease_model.pth (MobileNetV2, 38 classes, Foliar Leaves only)
     VALIDATED_MODEL_PARTS = {"Leaf", "Whole plant"}
 
-    if effective_part in VALIDATED_MODEL_PARTS:
+    if effective_part in VALIDATED_MODEL_PARTS and model_mgr.is_loaded:
         # BRANCH 1: Leaf Images -> Validated Dual-Stage CNN Models (14 Crops, 38 Pathologies)
         final_res = model_mgr.predict_image(image_path, plant_part=effective_part)
         final_res["analysis_method"] = "CNN (Validated)"
     else:
-        # BRANCH 2: Non-Leaf Images (Fruit, Vegetable, Bulb, Seed, Stem, Root, Tuber, Produce, etc.)
-        # -> Existing Gemini Multimodal Vision Integration
+        # Use Gemini for non-leaf images or when the optional CNN is unavailable.
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not api_key:
             # API configuration missing -> clear UNSUPPORTED / AI_SERVICE_UNAVAILABLE response

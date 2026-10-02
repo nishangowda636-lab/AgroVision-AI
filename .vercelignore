@@ -1,0 +1,7 @@
+backend/dataset/
+backend/uploads/
+backend/train_*.py
+backend/evaluate_*.py
+backend/test_*.py
+frontend/node_modules/
+frontend/dist/

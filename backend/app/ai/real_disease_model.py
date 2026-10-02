@@ -17,11 +17,20 @@ import numpy as np
 import cv2
 from typing import Dict, Any, Optional, List, Tuple
 
-import torch
-import torch.nn as nn
-from torchvision import transforms, models
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-HAS_TORCH = True
+try:
+    import torch
+    import torch.nn as nn
+    from torchvision import transforms, models
+
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    HAS_TORCH = True
+except ImportError:
+    torch = None
+    nn = None
+    transforms = None
+    models = None
+    DEVICE = "cpu"
+    HAS_TORCH = False
 
 if hasattr(sys.stdout, 'reconfigure'):
     try:
@@ -699,12 +708,15 @@ class CropHealthModelManager:
         return self.disease_model
 
     def _init_transform(self):
-        self.transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
+        if HAS_TORCH:
+            self.transform = transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        else:
+            self.transform = None
 
     def load_models(self):
         """Loads both the Crop Classifier and Disease Classifier models."""
