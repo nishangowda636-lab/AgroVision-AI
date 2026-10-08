@@ -88,7 +88,8 @@ export const AuthProvider = ({ children }) => {
       return JSON.stringify(detail);
     }
     if (err.message === 'Network Error' || !err.response) {
-      return 'Cannot connect to backend server. Please make sure the backend is running on http://localhost:8000.';
+      const backendUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      return `Cannot connect to backend server. Please verify the backend is online at ${backendUrl}.`;
     }
     return err.message || defaultMsg;
   };

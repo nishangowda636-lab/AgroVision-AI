@@ -93,8 +93,8 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div className="p-3 rounded-xl bg-[#08120E] border border-[#1B382D] space-y-1">
-            <span className="font-bold text-white block">FastAPI Server & SQLite Engine</span>
-            <p className="text-[#8FA59B]">Connection pool healthy • Schema auto-migrated • Port 8000</p>
+            <span className="font-bold text-white block">FastAPI Server & Database Engine</span>
+            <p className="text-[#8FA59B]">Connection pool healthy • Schema auto-migrated • Cloud API</p>
           </div>
           <div className="p-3 rounded-xl bg-[#08120E] border border-[#1B382D] space-y-1">
             <span className="font-bold text-white block">Machine Learning Inference Engine</span>
