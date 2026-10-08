@@ -1,8 +1,41 @@
+# Vercel Deployment Exclusions for AgroVision AI Backend
+# Keeps function bundle size well below 500 MB while preserving all trained ML models
+
+# Heavy raw datasets and media uploads (~82 MB)
 dataset/
 uploads/
+
+# Training and evaluation datasets stored in models directory (~5 MB)
+models/**/*.csv
+models/**/*.png
+
+# Local SQLite databases (~1.2 MB)
+*.db
+*.sqlite
+*.sqlite3
+
+# Offline training, evaluation, and test scripts
 train_*.py
 evaluate_*.py
 test_*.py
+dataset_downloader.py
+create_pouches.py
+find_images.py
+migrate_farmer_roles.py
+verify_government_schemes.py
+run_server.py
+requirements-ml.txt
+WEATHER_INTELLIGENCE_README.md
+
+# Python cache & bytecode
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environment files & Git
 .env
+.env.*
+.git*
+.DS_Store

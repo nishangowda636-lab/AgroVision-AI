@@ -1,7 +1,54 @@
+# Vercel Deployment Exclusions for AgroVision AI Repository
+
+# Backend raw datasets & uploads (~82 MB)
+dataset/
 backend/dataset/
+uploads/
 backend/uploads/
+
+# Training CSVs & images inside models folder (~5 MB)
+models/**/*.csv
+backend/models/**/*.csv
+models/**/*.png
+backend/models/**/*.png
+
+# Local SQLite databases
+*.db
+backend/*.db
+*.sqlite
+backend/*.sqlite
+
+# Backend training, evaluation, and test scripts
+train_*.py
 backend/train_*.py
+evaluate_*.py
 backend/evaluate_*.py
+test_*.py
 backend/test_*.py
+backend/dataset_downloader.py
+backend/create_pouches.py
+backend/find_images.py
+backend/migrate_farmer_roles.py
+backend/verify_government_schemes.py
+backend/run_server.py
+backend/requirements-ml.txt
+backend/WEATHER_INTELLIGENCE_README.md
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Environment files
+.env
+*.env
+*.env.*
+backend/.env
+frontend/.env
+frontend/.env.*
+
+# Frontend build artifacts & dependencies
 frontend/node_modules/
 frontend/dist/
