@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -25,10 +26,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Configuration for React Frontend
+# CORS Configuration for React Frontend (supports environment override in production)
+cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+if cors_origins_raw and cors_origins_raw.strip() != "*":
+    allowed_origins = [orig.strip() for orig in cors_origins_raw.split(",") if orig.strip()]
+    for dev_orig in ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]:
+        if dev_orig not in allowed_origins:
+            allowed_origins.append(dev_orig)
+else:
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

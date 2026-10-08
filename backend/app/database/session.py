@@ -16,6 +16,8 @@ if raw_db_url and raw_db_url.strip() not in (
     "sqlite:///agrovision.db",
 ):
     DATABASE_URL: str = raw_db_url.strip()
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 elif os.getenv("VERCEL"):
     temp_db_path = os.path.join(tempfile.gettempdir(), "agrovision.db").replace("\\", "/")
     DATABASE_URL = f"sqlite:///{temp_db_path}"
