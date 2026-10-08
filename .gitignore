@@ -15,6 +15,24 @@ __pycache__/
 venv/
 ENV/
 
+# Large training datasets and uploaded media (keeps function bundle < 450 MB)
+backend/dataset/
+dataset/
+backend/uploads/
+uploads/
+
+# Training CSV datasets & evaluation plots in models directory
+backend/models/**/*.csv
+models/**/*.csv
+backend/models/**/*.png
+models/**/*.png
+
+# Local SQLite databases
+backend/agrovision.db
+*.db
+*.sqlite
+*.sqlite3
+
 # Vercel deployment cache
 .vercel
 

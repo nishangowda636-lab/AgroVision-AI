@@ -1,6 +1,24 @@
-.env
-*.env
-*.env.*
+# Backend-level Git exclusions
+# Large training datasets and uploaded media
+dataset/
+uploads/
+
+# Training CSV datasets & evaluation plots in models directory
+models/**/*.csv
+models/**/*.png
+
+# Local SQLite databases
+agrovision.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Python bytecode & cache
 __pycache__/
-*.py[cod]
-.vercel
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.*
