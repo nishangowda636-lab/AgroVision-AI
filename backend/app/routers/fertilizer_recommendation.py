@@ -161,6 +161,27 @@ def predict_fertilizer_recommendation(
         ) for d in res["dosage_items"]
     ]
 
+    # 4. Check Recent Fertilizer Applications for Duplicate / Waiting Warnings
+    application_warnings = []
+    if farm is not None:
+        try:
+            recent_apps = db.query(FertilizerApplication).filter(
+                FertilizerApplication.farm_id == farm.id
+            ).order_by(FertilizerApplication.date_applied.desc()).limit(3).all()
+            today_date = datetime.now(timezone.utc).date()
+            for app_rec in recent_apps:
+                try:
+                    app_date = datetime.strptime(app_rec.date_applied[:10], "%Y-%m-%d").date()
+                    days_ago = (today_date - app_date).days
+                    if 0 <= days_ago <= 7:
+                        application_warnings.append(
+                            f"Applied {app_rec.product_name} ({app_rec.quantity} {app_rec.unit or 'kg'}) on {app_rec.date_applied} ({days_ago} days ago). Feeder roots require 5–7 days for full uptake—monitor crop response before applying full chemical doses."
+                        )
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"Error checking recent fertilizer applications: {e}")
+
     return FertilizerRecommendationResponse(
         farm_id=farm.id if farm else None,
         farm_name=farm_name,
@@ -185,6 +206,7 @@ def predict_fertilizer_recommendation(
         next_safe_window=res.get("next_safe_window"),
         weather_source=weather_source,
         dosage_items=dosage_items,
+        application_warnings=application_warnings,
         model_used=res["model_used"],
         model_accuracy=res["model_accuracy"],
         timestamp=datetime.now(timezone.utc)

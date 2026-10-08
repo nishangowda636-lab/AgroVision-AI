@@ -7,7 +7,7 @@ Verifies:
 3. Multiple farms switching & isolation
 4. Rain forecast vs low moisture conflict resolution
 5. Crop disease scan integration & severity escalation
-6. Satellite stress zone inspection recommendation
+6. Soil moisture and operational stress resolution
 7. Fertilizer rain-leaching lock
 8. Unauthorized farm access rejection (404 / 403)
 9. Action status lifecycle (PENDING -> IN_PROGRESS -> COMPLETED / SKIPPED)

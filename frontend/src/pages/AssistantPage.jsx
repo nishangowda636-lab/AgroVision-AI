@@ -23,28 +23,32 @@ import {
   Receipt,
   Check,
   X,
-  Satellite,
   FileText,
   Clock,
   WifiOff,
-  Edit3
+  Edit3,
+  User,
+  Radio,
+  Play,
+  Square,
+  TrendingUp
 } from 'lucide-react';
 import api from '../services/api';
 import offlineStorage from '../services/offlineStorage';
+import {
+  speakAgentMessage,
+  stopAgentSpeech,
+  getVoicePersonas,
+  getActivePersona,
+  setActivePersona,
+  previewVoice,
+  isSpeechSupported
+} from '../utils/agentVoiceService';
 
 const INDIAN_LANGUAGES = [
   { name: 'English', code: 'en-US', native: 'English' },
   { name: 'Kannada', code: 'kn-IN', native: 'ಕನ್ನಡ' },
   { name: 'Hindi', code: 'hi-IN', native: 'हिन्दी' },
-  { name: 'Telugu', code: 'te-IN', native: 'తెలుగు' },
-  { name: 'Tamil', code: 'ta-IN', native: 'தமிழ்' },
-  { name: 'Malayalam', code: 'ml-IN', native: 'മലയാളം' },
-  { name: 'Marathi', code: 'mr-IN', native: 'मराठी' },
-  { name: 'Bengali', code: 'bn-IN', native: 'বাংলা' },
-  { name: 'Gujarati', code: 'gu-IN', native: 'ગુજરાતી' },
-  { name: 'Punjabi', code: 'pa-IN', native: 'ਪੰਜਾਬੀ' },
-  { name: 'Odia', code: 'or-IN', native: 'ଓଡ଼ିଆ' },
-  { name: 'Urdu', code: 'ur-IN', native: 'اردو' }
 ];
 
 export default function AssistantPage() {
@@ -53,6 +57,8 @@ export default function AssistantPage() {
   const navigate = useNavigate();
 
   const [selectedLanguage, setSelectedLanguage] = useState(language || 'English');
+  const [activePersona, setActivePersonaState] = useState(() => getActivePersona(language || 'English'));
+  const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [assistantState, setAssistantState] = useState('idle');
@@ -70,6 +76,12 @@ export default function AssistantPage() {
   const [farmerNoteText, setFarmerNoteText] = useState('');
 
   const langObj = INDIAN_LANGUAGES.find((l) => l.name === selectedLanguage) || INDIAN_LANGUAGES[0];
+  const availablePersonas = getVoicePersonas(selectedLanguage);
+
+  useEffect(() => {
+    const persona = getActivePersona(selectedLanguage);
+    setActivePersonaState(persona);
+  }, [selectedLanguage]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -87,10 +99,50 @@ export default function AssistantPage() {
     };
   }, []);
 
+  // Cut off all voice audio when switching to another feature, navigating away, or hiding tab
   useEffect(() => {
-    const greetingText = activeFarm
-      ? `Namaskara ${user?.full_name?.split(' ')[0] || 'Farmer'}! I am your AI Farm Agent monitoring **${activeFarm.name}** (${activeFarm.crop || 'Crop'} in ${activeFarm.location_name || 'your region'}).\n\nI have synthesized your live weather, ${activeFarm.soil_type || 'soil'} parameters, IoT telemetry, crop growth stage, and satellite NDVI vigor into today's action plan.`
-      : `Namaskara ${user?.full_name?.split(' ')[0] || 'Farmer'}! Welcome to AgroVision AI Farm Agent. Please select or configure a farm to load your personalized Today's Farm Plan, irrigation advice, and disease alerts.`;
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAgentSpeech();
+        setIsPlayingPlan(false);
+        setIsPreviewingVoice(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopAgentSpeech();
+      setIsPlayingPlan(false);
+      setIsPreviewingVoice(false);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {
+          console.warn('Speech cancellation error:', e);
+        }
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let greetingText = '';
+    const farmerName = user?.full_name?.split(' ')[0] || 'Farmer';
+
+    if (selectedLanguage === 'Kannada') {
+      greetingText = activeFarm
+        ? `ನಮಸ್ಕಾರ ${farmerName}! ನಾನು ನಿಮ್ಮ ಆಗ್ರೋವಿಷನ್ AI ಫಾರ್ಮ್ ಏಜೆಂಟ್. **${activeFarm.name}** (${activeFarm.crop || 'ಬೆಳೆ'}, ${activeFarm.location_name || 'ನಿಮ್ಮ ಪ್ರದೇಶ'}) ತೋಟದ ಲೈವ್ ಹವಾಮಾನ, ಮಣ್ಣಿನ ತೇವಾಂಶ ಮತ್ತು ಬೆಳೆ ಬೆಳವಣಿಗೆಯನ್ನು ಪರಿಶೀಲಿಸಿ ಇಂದಿನ ಕೃಷಿ ಯೋಜನೆಯನ್ನು ಸಿದ್ಧಪಡಿಸಿದ್ದೇನೆ.\n\nಮೇಲಿನ ಆಡಿಯೋ ಬಟನ್ ಒತ್ತಿ ಧ್ವನಿಯಲ್ಲಿ ಕೇಳಬಹುದು ಅಥವಾ ಕೆಳಗಿನ ತ್ವರಿತ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಿ.`
+        : `ನಮಸ್ಕಾರ ${farmerName}! ಆಗ್ರೋವಿಷನ್ AI ಫಾರ್ಮ್ ಏಜೆಂಟ್‌ಗೆ ಸುಸ್ವಾಗತ. ನಿಮ್ಮ ತೋಟದ ಇಂದಿನ ಯೋಜನೆ, ನೀರಾವರಿ ಸಲಹೆ ಮತ್ತು ರೋಗ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ದಯವಿಟ್ಟು ತೋಟವನ್ನು ಆಯ್ಕೆಮಾಡಿ.`;
+    } else if (selectedLanguage === 'Hindi') {
+      greetingText = activeFarm
+        ? `नमस्ते ${farmerName}! मैं आपका एग्रोविज़न AI फार्म एजेंट हूँ। **${activeFarm.name}** (${activeFarm.crop || 'फसल'}, ${activeFarm.location_name || 'आपका क्षेत्र'}) के लिए लाइव मौसम, मृदा नमी और फसल की स्थिति के आधार पर आज की प्राथमिकता योजना तैयार है।\n\nआप ऊपर दिए गए ऑडियो बटन से योजना सुन सकते हैं या सीधे बोलकर प्रश्न पूछ सकते हैं।`
+        : `नमस्ते ${farmerName}! एग्रोविज़न AI फार्म एजेंट में आपका स्वागत है। अपने खेत की आज की योजना, सिंचाई और रोग सलाह लोड करने के लिए कृपया खेत चुनें।`;
+    } else {
+      greetingText = activeFarm
+        ? `Namaskara ${farmerName}! I am your AI Farm Agent monitoring **${activeFarm.name}** (${activeFarm.crop || 'Crop'} in ${activeFarm.location_name || 'your region'}).\n\nI have synthesized your live weather, ${activeFarm.soil_type || 'soil'} parameters, IoT telemetry, and crop growth stage into today's action plan.`
+        : `Namaskara ${farmerName}! Welcome to AgroVision AI Farm Agent. Please select or configure a farm to load your personalized Today's Farm Plan, irrigation advice, and disease alerts.`;
+    }
 
     setMessages([
       {
@@ -99,7 +151,7 @@ export default function AssistantPage() {
         time: 'Just now'
       }
     ]);
-  }, [activeFarm?.id, user?.full_name]);
+  }, [activeFarm?.id, user?.full_name, selectedLanguage]);
 
   const fetchTodayPlan = async () => {
     if (!activeFarm) return;
@@ -125,50 +177,120 @@ export default function AssistantPage() {
     fetchTodayPlan();
   }, [activeFarm?.id, selectedLanguage]);
 
-  const quickActions = [
+  const isPlantation = activeFarm && ['coffee', 'pepper', 'black pepper', 'cardamom', 'arecanut'].some(c => (activeFarm.crop || '').toLowerCase().includes(c));
+
+  const quickActions = selectedLanguage === 'Kannada' ? [
+    { label: "ಇಂದಿನ ಯೋಜನೆ", query: "ಇಂದು ತೋಟದಲ್ಲಿ ನಾನು ಏನು ಮಾಡಬೇಕು?", icon: Sparkles },
+    { label: "ಎಪಿಎಂಸಿ ಮಾರ್ಕೆಟ್ ಬೆಲೆ", query: "ಎಪಿಎಂಸಿ ಮಾರ್ಕೆಟ್ ಬೆಲೆ ಎಷ್ಟು?", icon: TrendingUp },
+    { label: "ರಸಗೊಬ್ಬರ ಪ್ರಮಾಣ", query: `ನನ್ನ ${activeFarm?.size_acres || 1} ಎಕರೆ ${activeFarm?.crop || 'ಬೆಳೆ'}ಗೆ ಎಷ್ಟು ರಸಗೊಬ್ಬರ (DAP, ಯೂರಿಯಾ, ಪೊಟ್ಯಾಶ್) ಬೇಕು?`, icon: Bot },
+    { label: "ನೀರಾವರಿ ಪರಿಶೀಲನೆ", query: "ನನ್ನ ಬೆಳೆಗೆ ಈಗ ನೀರಾವರಿ ಮಾಡಬೇಕಾ ಅಥವಾ ಮುಂದೂಡಬೇಕಾ?", icon: Droplets },
+    { label: "ಸ್ಪ್ರೇ ಸಾಧ್ಯತೆ", query: "ಇಂದು ತೋಟದಲ್ಲಿ ಕೀಟನಾಶಕ ಅಥವಾ ಶಿಲೀಂಧ್ರನಾಶಕ ಸ್ಪ್ರೇ ಮಾಡಬಹುದೇ?", icon: CloudRain },
+    { label: isPlantation ? "ರೋಗ & ತುಕ್ಕು ತಪಾಸಣೆ" : "ಬೆಳೆ ಆರೋಗ್ಯ", query: isPlantation ? `ನನ್ನ ${activeFarm?.crop || 'ಬೆಳೆ'}ಯಲ್ಲಿ ರೋಗ ಅಥವಾ ಎಲೆ ತುಕ್ಕು ನಿಯಂತ್ರಣ ಹೇಗೆ?` : "ಪ್ರಸ್ತುತ ರೋಗ ಮತ್ತು ಕೀಟಗಳ ಅಪಾಯವೇನಾದರೂ ಇದೆಯೇ?", icon: Bug },
+    { label: "ಲೆಡ್ಜರ್ ಲಾಭ/ನಷ್ಟ", query: "ನನ್ನ ತೋಟದ ಒಟ್ಟು ಖರ್ಚು ಮತ್ತು ಲಾಭ ಎಷ್ಟು?", icon: Receipt }
+  ] : selectedLanguage === 'Hindi' ? [
+    { label: "आज की योजना", query: "आज मुझे अपने खेत में क्या करना चाहिए?", icon: Sparkles },
+    { label: "एपीएमसी मंडी भाव", query: "एपीएमसी मंडी भाव क्या है?", icon: TrendingUp },
+    { label: "खाद की मात्रा", query: `मेरे ${activeFarm?.size_acres || 1} एकड़ ${activeFarm?.crop || 'फसल'} के लिए कितनी खाद (DAP, यूरिया, पोटाश) चाहिए?`, icon: Bot },
+    { label: "सिंचाई जांचें", query: "क्या मुझे अभी सिंचाई करनी चाहिए या टालनी चाहिए?", icon: Droplets },
+    { label: "स्प्रे खिड़की", query: "क्या आज कीटनाशक या फफूंदनाशक का छिड़काव करना सुरक्षित है?", icon: CloudRain },
+    { label: isPlantation ? "रोग व रस्ट नियंत्रण" : "फसल स्वास्थ्य", query: isPlantation ? `मेरी ${activeFarm?.crop || 'फसल'} में रोग नियंत्रण कैसे करें?` : "अभी फसल में कीट और रोग का क्या जोखिम है?", icon: Bug },
+    { label: "लेज़र लाभ/खर्च", query: "मेरे खेत का कुल खर्च और लाभ कितना है?", icon: Receipt }
+  ] : [
     { label: "Plan My Day", query: "What should I do today on my farm?", icon: Sparkles },
+    { label: "APMC Market Price", query: "What is the APMC market price?", icon: TrendingUp },
+    { label: "Fertilizer per Acre", query: `How much fertilizer (DAP, Urea, MOP) do I need for my ${activeFarm?.size_acres || 1} acres of ${activeFarm?.crop || 'crop'}?`, icon: Bot },
     { label: "Check Irrigation", query: "Should I irrigate my crop now or delay?", icon: Droplets },
-    { label: "Check Crop Health", query: "What are the disease and pest risks right now?", icon: Bug },
-    { label: "Check Weather", query: "Will it rain today or tomorrow?", icon: CloudRain },
-    { label: "Explain My Farm", query: "Explain the overall health and status of my farm.", icon: Activity },
-    { label: "Ask AI", query: "What should I do at this crop stage?", icon: Bot }
+    { label: "Can I Spray Today?", query: "Is it safe to spray fungicide or pesticide today based on wind and rain?", icon: CloudRain },
+    { label: isPlantation ? "Disease & Rust Control" : "Check Crop Health", query: isPlantation ? `How to manage diseases and foliar stress on my ${activeFarm?.crop || 'plantation'}?` : "What are the disease and pest risks right now?", icon: Bug },
+    { label: "Farm Profit & Ledger", query: "How much profit and expense have I recorded in my Farm Ledger?", icon: Receipt }
   ];
 
+  const handleToggleAudio = () => {
+    if (autoSpeak) {
+      setAutoSpeak(false);
+      stopAgentSpeech();
+      setIsPlayingPlan(false);
+      setIsPreviewingVoice(false);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {
+          console.warn('Speech cancellation error:', e);
+        }
+      }
+    } else {
+      setAutoSpeak(true);
+    }
+  };
+
   const speakText = (text) => {
-    if (!('speechSynthesis' in window) || !autoSpeak) return;
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*_#`]/g, '').replace(/WHAT TO DO:|WHY:|WHEN:|DATA USED:|CAUTION:/g, '');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = langObj.code;
-    utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
+    if (!autoSpeak || !isSpeechSupported()) return;
+    stopAgentSpeech();
+    speakAgentMessage({
+      text,
+      language: selectedLanguage,
+      persona: activePersona,
+      onStart: () => {},
+      onEnd: () => setIsPlayingPlan(false),
+      onError: () => setIsPlayingPlan(false)
+    });
   };
 
   const handleReadTodayPlan = () => {
-    if (!('speechSynthesis' in window)) {
+    if (!isSpeechSupported()) {
       alert('Speech synthesis is not supported on this device.');
       return;
     }
 
     if (isPlayingPlan) {
-      window.speechSynthesis.cancel();
+      stopAgentSpeech();
       setIsPlayingPlan(false);
       return;
+    }
+
+    if (!autoSpeak) {
+      setAutoSpeak(true);
     }
 
     const script =
       farmPlan?.voice_script ||
       farmPlan?.summary ||
-      `Today's farm plan for ${activeFarm?.name}: All systems optimal.`;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(script);
-    utterance.lang = langObj.code;
-    utterance.rate = 0.95;
-    utterance.onend = () => setIsPlayingPlan(false);
-    utterance.onerror = () => setIsPlayingPlan(false);
+      (selectedLanguage === 'Kannada'
+        ? `${activeFarm?.name || 'ನಿಮ್ಮ ತೋಟ'}: ಇಂದಿನ ಕೃಷಿ ಯೋಜನೆ ಎಲ್ಲಾ ವ್ಯವಸ್ಥೆಗಳು ಸರಿಯಾಗಿವೆ.`
+        : selectedLanguage === 'Hindi'
+        ? `${activeFarm?.name || 'आपका खेत'}: आज की कार्य योजना सभी प्रणालियां सामान्य हैं।`
+        : `Today's farm plan for ${activeFarm?.name}: All systems optimal.`);
 
     setIsPlayingPlan(true);
-    window.speechSynthesis.speak(utterance);
+    stopAgentSpeech();
+    speakAgentMessage({
+      text: script,
+      language: selectedLanguage,
+      persona: activePersona,
+      onStart: () => setIsPlayingPlan(true),
+      onEnd: () => setIsPlayingPlan(false),
+      onError: () => setIsPlayingPlan(false)
+    });
+  };
+
+  const handleSelectPersona = (persona) => {
+    setActivePersonaState(persona);
+    setActivePersona(selectedLanguage, persona.id);
+    handlePreviewVoice(persona);
+  };
+
+  const handlePreviewVoice = (personaToTest = activePersona) => {
+    if (!isSpeechSupported()) {
+      alert('Speech synthesis is not supported on this browser.');
+      return;
+    }
+    stopAgentSpeech();
+    setIsPreviewingVoice(true);
+    previewVoice(selectedLanguage, personaToTest, {
+      onStart: () => setIsPreviewingVoice(true),
+      onEnd: () => setIsPreviewingVoice(false),
+      onError: () => setIsPreviewingVoice(false)
+    });
   };
 
   const handleUpdateActionStatus = async (actionId, newStatus, optionalNote = null) => {
@@ -323,6 +445,7 @@ export default function AssistantPage() {
         structured: (structured.what_to_do || structured.why) ? structured : null,
         action: actionObj,
         citations: res.data.source_citations || [],
+        language: res.data.language || selectedLanguage,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, aiMsg]);
@@ -422,11 +545,11 @@ export default function AssistantPage() {
             <span>AI Farm Agent & Advisory Co-Pilot</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#8FA59B] mt-0.5">
-            Synthesizing weather radar, IoT probes, crop phenology, satellite NDVI vigor, and pathology into daily actions.
+            Synthesizing weather radar, IoT probes, crop phenology, and foliar pathology into daily actions.
           </p>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Language/Voice Selector */}
         <div className="flex flex-wrap items-center gap-2">
           {farms && farms.length > 0 && (
             <select
@@ -445,39 +568,105 @@ export default function AssistantPage() {
             </select>
           )}
 
-          {/* Voice Plan Button */}
+          {/* Voice Plan Button with Animated Soundwave */}
           <button
             onClick={handleReadTodayPlan}
-            className="os-btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 cursor-pointer"
+            className={`text-xs px-3 py-2 rounded-xl border flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+              isPlayingPlan
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 animate-pulse'
+                : 'bg-[#10B981]/15 border-[#10B981]/30 hover:bg-[#10B981]/25 text-[#10B981]'
+            }`}
           >
-            <Volume2 className={`w-3.5 h-3.5 ${isPlayingPlan ? 'text-[#F59E0B]' : 'text-[#10B981]'}`} />
-            <span>{isPlayingPlan ? 'Stop Voice' : "Listen to Plan"}</span>
+            {isPlayingPlan ? (
+              <>
+                <Square className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <span className="font-bold">
+                  {selectedLanguage === 'Kannada' ? 'ಧ್ವನಿ ನಿಲ್ಲಿಸಿ' : selectedLanguage === 'Hindi' ? 'आवाज़ रोकें' : 'Stop Audio'}
+                </span>
+                <span className="flex items-center gap-0.5 ml-1 h-3">
+                  <span className="w-0.5 h-full bg-amber-400 animate-bounce" />
+                  <span className="w-0.5 h-2/3 bg-amber-400 animate-pulse" />
+                  <span className="w-0.5 h-full bg-amber-400 animate-bounce delay-75" />
+                </span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-3.5 h-3.5" />
+                <span className="font-semibold">
+                  {selectedLanguage === 'Kannada'
+                    ? 'ಯೋಜನೆ ಆಲಿಸಿ'
+                    : selectedLanguage === 'Hindi'
+                    ? 'योजना सुनें'
+                    : 'Listen to Farm Plan'}
+                </span>
+              </>
+            )}
           </button>
+        </div>
+      </div>
 
-          {/* Language Selector */}
-          <div className="flex items-center gap-1 bg-[#0E1E18] border border-[#1B382D] rounded-xl px-2.5 py-1.5 text-xs">
-            <Globe className="w-3.5 h-3.5 text-[#10B981]" />
-            <select
-              value={selectedLanguage}
-              onChange={(e) => {
-                setSelectedLanguage(e.target.value);
-                changeLanguage(e.target.value);
-              }}
-              className="bg-transparent text-xs font-semibold text-[#F3F7F5] focus:outline-none cursor-pointer"
-            >
-              {INDIAN_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.name} className="bg-[#0E1E18] text-[#F3F7F5]">
-                  {l.native} ({l.name})
-                </option>
-              ))}
-            </select>
+      {/* ========================================================================= */}
+      {/* FARMER LANGUAGE SELECTION BAR (English, Kannada, Hindi) */}
+      {/* ========================================================================= */}
+      <div className="os-card p-3 sm:p-4 border-[#10B981]/25 bg-gradient-to-r from-[#0C2419] via-[#0E1E18] to-[#0C2419] shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Section Label */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center border border-[#10B981]/30 shrink-0">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[#F3F7F5]">
+                {selectedLanguage === 'Kannada'
+                  ? 'ಕೃಷಿ ಭಾಷೆ ಆಯ್ಕೆ'
+                  : selectedLanguage === 'Hindi'
+                  ? 'किसान भाषा चयन'
+                  : 'Farmer Language Selection'}
+              </span>
+              <p className="text-[11px] text-[#8FA59B]">
+                {selectedLanguage === 'Kannada'
+                  ? 'ನಿಮ್ಮ AI ಕೃಷಿ ಸಹಾಯಕರೊಂದಿಗೆ ಸಂವಹನ ನಡೆಸಲು ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ'
+                  : selectedLanguage === 'Hindi'
+                  ? 'अपने एआई फार्म एजेंट से बातचीत के लिए भाषा चुनें'
+                  : 'Select communication language for your AI Farm Agent'}
+              </p>
+            </div>
+          </div>
+
+          {/* Languages (English, Kannada, Hindi) */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { name: 'English', label: 'English', flag: '🇬🇧' },
+              { name: 'Kannada', label: 'ಕನ್ನಡ (Kannada)', flag: '🇮🇳' },
+              { name: 'Hindi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' }
+            ].map((langItem) => {
+              const isSelected = selectedLanguage === langItem.name;
+              return (
+                <button
+                  key={langItem.name}
+                  onClick={() => {
+                    setSelectedLanguage(langItem.name);
+                    changeLanguage(langItem.name);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.35)] scale-102 font-extrabold'
+                      : 'bg-[#08120E] text-[#8FA59B] hover:text-[#F3F7F5] border border-[#1B382D] hover:border-[#10B981]/40'
+                  }`}
+                >
+                  <span>{langItem.flag}</span>
+                  <span>{langItem.label}</span>
+                  {isSelected && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Selected Farm Health Telemetry Grid */}
       {activeFarm && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* 1. Crop & Growth Stage */}
           <div className="os-card p-3 space-y-1">
             <span className="text-[10px] text-[#8FA59B] font-semibold uppercase flex items-center gap-1">
@@ -511,15 +700,6 @@ export default function AssistantPage() {
               {activeFarm.location_name || 'Plot Location'}
             </p>
             <p className="text-[11px] text-[#38BDF8] font-medium">Open-Meteo High-Res</p>
-          </div>
-
-          {/* 4. Satellite NDVI Health */}
-          <div className="os-card p-3 space-y-1">
-            <span className="text-[10px] text-[#8FA59B] font-semibold uppercase flex items-center gap-1">
-              <Satellite className="w-3 h-3 text-[#10B981]" /> Satellite Vigor
-            </span>
-            <p className="text-xs font-bold text-[#F3F7F5]">Sentinel-2 L2A</p>
-            <p className="text-[11px] text-[#10B981] font-medium">10m Multispectral</p>
           </div>
 
           {/* 5. Pathology Scans */}
@@ -726,10 +906,40 @@ export default function AssistantPage() {
 
             <button
               onClick={handleReadTodayPlan}
-              className="os-btn-primary w-full py-2 text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md ${
+                isPlayingPlan
+                  ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300 animate-pulse'
+                  : 'os-btn-primary'
+              }`}
             >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>Listen to Spoken Audio Briefing ({langObj.native})</span>
+              {isPlayingPlan ? (
+                <>
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                  <span>
+                    {selectedLanguage === 'Kannada'
+                      ? 'ಧ್ವನಿ ನಿಲ್ಲಿಸಿ (Stop Voice)'
+                      : selectedLanguage === 'Hindi'
+                      ? 'आवाज़ रोकें (Stop Voice)'
+                      : 'Stop Audio Briefing'}
+                  </span>
+                  <span className="flex items-center gap-0.5 ml-1 h-3">
+                    <span className="w-0.5 h-full bg-amber-400 animate-bounce" />
+                    <span className="w-0.5 h-2/3 bg-amber-400 animate-pulse" />
+                    <span className="w-0.5 h-full bg-amber-400 animate-bounce delay-75" />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>
+                    {selectedLanguage === 'Kannada'
+                      ? 'ಕನ್ನಡ ಆಡಿಯೋ ಬ್ರೀಫಿಂಗ್ ಆಲಿಸಿ'
+                      : selectedLanguage === 'Hindi'
+                      ? 'हिंदी ऑडियो ब्रीफिंग सुनें'
+                      : 'Listen to Spoken Briefing'}
+                  </span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -755,16 +965,31 @@ export default function AssistantPage() {
               </span>
             </div>
 
-            <div className="flex items-center gap-2 text-[#8FA59B] text-[11px]">
-              <span>Audio:</span>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[#8FA59B] text-[11px] font-medium">Audio:</span>
               <button
-                onClick={() => setAutoSpeak(!autoSpeak)}
-                className={`p-1 rounded transition-colors cursor-pointer ${
-                  autoSpeak ? 'text-[#10B981] bg-[#10B981]/15' : 'text-[#8FA59B]'
+                type="button"
+                onClick={handleToggleAudio}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
+                  autoSpeak
+                    ? 'bg-[#10B981]/20 border-[#10B981]/50 text-[#10B981] shadow-sm hover:bg-[#10B981]/30'
+                    : 'bg-[#1B382D]/40 border-[#1B382D] text-[#8FA59B] hover:text-[#F3F7F5] hover:border-[#8FA59B]/40'
                 }`}
-                title={autoSpeak ? 'Audio Speech Enabled' : 'Speech Muted'}
+                title={autoSpeak ? 'Audio is ON — Click to turn OFF' : 'Audio is OFF — Click to turn ON'}
+                aria-label={autoSpeak ? 'Turn Audio Off' : 'Turn Audio On'}
               >
-                {autoSpeak ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                {autoSpeak ? (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-[#10B981]" />
+                    <span>ON</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5 text-[#8FA59B]" />
+                    <span>OFF</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -792,44 +1017,60 @@ export default function AssistantPage() {
                   }`}
                 >
                   {/* Structured 5-Point Box if present */}
-                  {msg.structured ? (
-                    <div className="space-y-2 text-xs">
-                      {msg.structured.what_to_do && (
-                        <div className="p-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/30">
-                          <span className="font-bold text-[#10B981] block text-[10px] uppercase tracking-wider">WHAT TO DO</span>
-                          <p className="text-[#F3F7F5] font-semibold whitespace-pre-line mt-0.5">{msg.structured.what_to_do}</p>
-                        </div>
-                      )}
+                  {msg.structured ? (() => {
+                    const isMsgKannada = selectedLanguage === 'Kannada' || msg.language === 'Kannada' || /[\u0C80-\u0CFF]/.test(msg.text || '') || /[\u0C80-\u0CFF]/.test(msg.structured?.what_to_do || '');
+                    const isMsgHindi = selectedLanguage === 'Hindi' || msg.language === 'Hindi' || /[\u0900-\u097F]/.test(msg.text || '') || /[\u0900-\u097F]/.test(msg.structured?.what_to_do || '');
 
-                      {msg.structured.why && (
-                        <div>
-                          <span className="font-semibold text-[#8FA59B] block text-[10px] uppercase">WHY</span>
-                          <p className="text-[#8FA59B] whitespace-pre-line mt-0.5">{msg.structured.why}</p>
-                        </div>
-                      )}
+                    return (
+                      <div className="space-y-2 text-xs">
+                        {msg.structured.what_to_do && (
+                          <div className="p-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/30">
+                            <span className="font-bold text-[#10B981] block text-[10px] uppercase tracking-wider">
+                              {isMsgKannada ? 'ಏನು ಮಾಡಬೇಕು (WHAT TO DO)' : isMsgHindi ? 'क्या करें (WHAT TO DO)' : 'WHAT TO DO'}
+                            </span>
+                            <p className="text-[#F3F7F5] font-semibold whitespace-pre-line mt-0.5">{msg.structured.what_to_do}</p>
+                          </div>
+                        )}
 
-                      {msg.structured.when_to_do && (
-                        <div>
-                          <span className="font-semibold text-[#8FA59B] block text-[10px] uppercase">WHEN</span>
-                          <p className="text-[#F3F7F5] font-medium mt-0.5">{msg.structured.when_to_do}</p>
-                        </div>
-                      )}
+                        {msg.structured.why && (
+                          <div>
+                            <span className="font-semibold text-[#8FA59B] block text-[10px] uppercase">
+                              {isMsgKannada ? 'ಏಕೆ (WHY)' : isMsgHindi ? 'क्यों (WHY)' : 'WHY'}
+                            </span>
+                            <p className="text-[#8FA59B] whitespace-pre-line mt-0.5">{msg.structured.why}</p>
+                          </div>
+                        )}
 
-                      {msg.structured.data_used && (
-                        <div className="p-2 rounded-lg bg-[#0E1E18] border border-[#1B382D] text-[10px] text-[#8FA59B]">
-                          <span className="font-semibold text-[#10B981]">DATA BASIS: </span>
-                          <span>{msg.structured.data_used}</span>
-                        </div>
-                      )}
+                        {msg.structured.when_to_do && (
+                          <div>
+                            <span className="font-semibold text-[#8FA59B] block text-[10px] uppercase">
+                              {isMsgKannada ? 'ಯಾವಾಗ (WHEN)' : isMsgHindi ? 'कब (WHEN)' : 'WHEN'}
+                            </span>
+                            <p className="text-[#F3F7F5] font-medium mt-0.5">{msg.structured.when_to_do}</p>
+                          </div>
+                        )}
 
-                      {msg.structured.caution && (
-                        <div className="p-2 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-[10px] text-[#F59E0B] flex items-start gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          <span><strong>CAUTION:</strong> {msg.structured.caution}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                        {msg.structured.data_used && (
+                          <div className="p-2 rounded-lg bg-[#0E1E18] border border-[#1B382D] text-[10px] text-[#8FA59B]">
+                            <span className="font-semibold text-[#10B981]">
+                              {isMsgKannada ? 'ಬಳಸಿದ ಮಾಹಿತಿ (DATA BASIS): ' : isMsgHindi ? 'डेटा आधार (DATA BASIS): ' : 'DATA BASIS: '}
+                            </span>
+                            <span>{msg.structured.data_used}</span>
+                          </div>
+                        )}
+
+                        {msg.structured.caution && (
+                          <div className="p-2 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-[10px] text-[#F59E0B] flex items-start gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>{isMsgKannada ? 'ಎಚ್ಚರಿಕೆ (CAUTION): ' : isMsgHindi ? 'सावधानी (CAUTION): ' : 'CAUTION: '}</strong>
+                              {msg.structured.caution}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })() : (
                     <p className="whitespace-pre-line text-xs leading-relaxed">{msg.text}</p>
                   )}
 
@@ -861,6 +1102,16 @@ export default function AssistantPage() {
                           Cancel
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {msg.citations.map((c, cIdx) => (
+                        <span key={cIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> {c}
+                        </span>
+                      ))}
                     </div>
                   )}
 

@@ -29,7 +29,6 @@ export default function PublicNavbar() {
     { name: 'About', path: '/about' },
     { name: 'Features', path: '/features' },
     { name: 'AI Farming', path: '/ai-farming' },
-    { name: 'Contact', path: '/contact' },
   ];
 
   return (

@@ -13,7 +13,6 @@ import {
   ArrowRight,
   ChevronRight,
   Sprout,
-  Satellite,
   Compass,
   FileSpreadsheet,
   CheckCircle2,
@@ -104,19 +103,6 @@ export default function FeaturesPage() {
       desc: 'Connect soil and ambient telemetry to monitor moisture, thermal, and electrical metrics.',
       details: 'Ingests wireless sensor telemetry for soil moisture, soil temperature, and NPK metrics with fallback to microclimate simulation.',
       tags: ['Soil Moisture Telemetry', 'Thermal Monitoring', 'Sensor Status']
-    },
-    {
-      id: 'satellite-health',
-      categoryId: 'field-environment',
-      categoryName: 'Field & Environment',
-      title: 'Satellite Field Health',
-      icon: Satellite,
-      iconColor: 'text-emerald-300',
-      badgeBg: 'bg-emerald-500/10',
-      badgeBorder: 'border-emerald-500/20',
-      desc: 'Review vegetation indices and multispectral field coverage trends.',
-      details: 'Normalized Difference Vegetation Index (NDVI) vegetation maps help identify uneven crop growth and dry zones across field boundaries.',
-      tags: ['NDVI Vegetation', 'Zonal Uniformity', 'Multispectral Views']
     },
     {
       id: 'smart-irrigation',

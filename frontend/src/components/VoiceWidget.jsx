@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Volume2, Bot, X, Sparkles, Check, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, Bot, X, Sparkles, Check, Loader2, Globe, Radio, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFarm } from '../context/FarmContext';
 import api from '../services/api';
 import { scaleIn } from '../utils/motion';
+import {
+  speakAgentMessage,
+  stopAgentSpeech,
+  getVoicePersonas,
+  getActivePersona,
+  setActivePersona,
+  previewVoice,
+  isSpeechSupported
+} from '../utils/agentVoiceService';
 
 const LANG_CODE_MAP = {
   'English': 'en-US',
   'Kannada': 'kn-IN',
-  'Hindi': 'hi-IN',
-  'Telugu': 'te-IN',
-  'Tamil': 'ta-IN',
-  'Malayalam': 'ml-IN',
-  'Marathi': 'mr-IN',
-  'Bengali': 'bn-IN',
-  'Gujarati': 'gu-IN',
-  'Punjabi': 'pa-IN',
-  'Odia': 'or-IN',
-  'Urdu': 'ur-IN'
+  'Hindi': 'hi-IN'
 };
 
 export default function VoiceWidget() {
@@ -29,10 +29,11 @@ export default function VoiceWidget() {
   const [response, setResponse] = useState('');
   const [speaking, setSpeaking] = useState(false);
   const [activeLang, setActiveLang] = useState('English');
+  const [activePersona, setActivePersonaState] = useState(() => getActivePersona('English'));
   const [processing, setProcessing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  const { language } = useAuth();
+  const { language, changeLanguage } = useAuth();
   const { activeFarm } = useFarm();
   const shouldReduceMotion = useReducedMotion();
 
@@ -41,6 +42,35 @@ export default function VoiceWidget() {
       setActiveLang(language);
     }
   }, [language]);
+
+  useEffect(() => {
+    const persona = getActivePersona(activeLang);
+    setActivePersonaState(persona);
+  }, [activeLang]);
+
+  const handleSelectLanguage = (langName) => {
+    setActiveLang(langName);
+    if (changeLanguage) changeLanguage(langName);
+    const persona = getActivePersona(langName);
+    setActivePersonaState(persona);
+  };
+
+  const handleSelectPersona = (persona) => {
+    setActivePersonaState(persona);
+    setActivePersona(activeLang, persona.id);
+    speakAgentMessage({
+      text: activeLang === 'Kannada'
+        ? `ನಮಸ್ಕಾರ, ${persona.name} ಸಕ್ರಿಯವಾಗಿದೆ.`
+        : activeLang === 'Hindi'
+        ? `नमस्ते, ${persona.name} सक्रिय है।`
+        : `Hello, ${persona.name} is now active.`,
+      language: activeLang,
+      persona: persona,
+      onStart: () => setSpeaking(true),
+      onEnd: () => setSpeaking(false),
+      onError: () => setSpeaking(false)
+    });
+  };
 
   const handleStartVoice = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -56,7 +86,7 @@ export default function VoiceWidget() {
 
     recognition.onstart = () => {
       setIsListening(true);
-      setTranscript('Listening...');
+      setTranscript(activeLang === 'Kannada' ? 'ಆಲಿಸಲಾಗುತ್ತಿದೆ...' : activeLang === 'Hindi' ? 'सुन रहा हूँ...' : 'Listening...');
       setPendingAction(null);
     };
 
@@ -69,7 +99,7 @@ export default function VoiceWidget() {
 
     recognition.onerror = () => {
       setIsListening(false);
-      setTranscript('Could not capture audio. Please tap mic and try again.');
+      setTranscript(activeLang === 'Kannada' ? 'ಧ್ವನಿ ಗ್ರಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಮೈಕ್ ಒತ್ತಿ.' : activeLang === 'Hindi' ? 'आवाज़ रिकॉर्ड नहीं हो सकी। कृपया पुनः प्रयास करें।' : 'Could not capture audio. Please tap mic and try again.');
     };
 
     recognition.onend = () => {
@@ -107,7 +137,11 @@ export default function VoiceWidget() {
       setPendingAction(actionObj);
       speakResponse(reply);
     } catch {
-      const fallback = 'Sorry, could not process your request right now. Please check your farm connection.';
+      const fallback = activeLang === 'Kannada'
+        ? 'ಕ್ಷಮಿಸಿ, ವಿನಂತಿಯನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಪರಿಶೀಲಿಸಿ.'
+        : activeLang === 'Hindi'
+        ? 'क्षमा करें, आपके अनुरोध पर कार्रवाई नहीं हो सकी। कृपया नेटवर्क जांचें।'
+        : 'Sorry, could not process your request right now. Please check your farm connection.';
       setResponse(fallback);
       speakResponse(fallback);
     } finally {
@@ -116,26 +150,20 @@ export default function VoiceWidget() {
   };
 
   const speakResponse = (text) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_CODE_MAP[activeLang] || 'en-US';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
+    if (!isSpeechSupported()) return;
+    speakAgentMessage({
+      text,
+      language: activeLang,
+      persona: activePersona,
+      onStart: () => setSpeaking(true),
+      onEnd: () => setSpeaking(false),
+      onError: () => setSpeaking(false)
+    });
   };
 
   const handleStopSpeaking = () => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      setSpeaking(false);
-    }
+    stopAgentSpeech();
+    setSpeaking(false);
   };
 
   return (
@@ -202,6 +230,34 @@ export default function VoiceWidget() {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Language & Voice Persona Quick Bar for Farmers */}
+            <div className="py-2.5 border-b border-emerald-500/15 space-y-2">
+              {/* Language Switcher Tabs */}
+              <div className="flex items-center justify-between gap-1 bg-emerald-950/40 p-1 rounded-xl border border-emerald-500/15">
+                {[
+                  { name: 'English', label: 'English', flag: '🇬🇧' },
+                  { name: 'Kannada', label: 'ಕನ್ನಡ', flag: '🇮🇳' },
+                  { name: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' }
+                ].map((item) => {
+                  const isCurrent = activeLang === item.name;
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => handleSelectLanguage(item.name)}
+                      className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        isCurrent
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-emerald-900/30'
+                      }`}
+                    >
+                      <span>{item.flag}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Content Area */}

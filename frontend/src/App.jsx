@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FarmProvider } from './context/FarmContext';
+import { stopAgentSpeech } from './utils/agentVoiceService';
 
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -16,7 +17,6 @@ import Landing from './pages/Landing';
 import AboutPage from './pages/AboutPage';
 import FeaturesPage from './pages/FeaturesPage';
 import AIFarmingPage from './pages/AIFarmingPage';
-import ContactPage from './pages/ContactPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import FarmSetup from './pages/FarmSetup';
@@ -31,7 +31,6 @@ import CropRecommendation from './pages/CropRecommendation';
 import CropCalendarPage from './pages/CropCalendarPage';
 import FarmCalculatorPage from './pages/FarmCalculatorPage';
 import FarmLedgerPage from './pages/FarmLedgerPage';
-import SatellitePage from './pages/SatellitePage';
 import GovernmentServicesPage from './pages/GovernmentServicesPage';
 import GovernmentSchemesPage from './pages/GovernmentSchemesPage';
 import YieldPrediction from './pages/YieldPrediction';
@@ -45,7 +44,7 @@ import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import MarketplacePage from './pages/MarketplacePage';
 
-const PUBLIC_PAGES = ['/', '/about', '/features', '/ai-farming', '/contact'];
+const PUBLIC_PAGES = ['/', '/about', '/features', '/ai-farming'];
 const AUTH_PAGES = ['/login', '/register', '/forgot-password'];
 
 // Layout wrapper managing public routes, auth gates, and protected dashboard workspace
@@ -56,6 +55,11 @@ function AppLayout() {
 
   const isPublicPage = PUBLIC_PAGES.includes(location.pathname);
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
+
+  // Stop any ongoing speech synthesis whenever the user switches between pages/features
+  useEffect(() => {
+    stopAgentSpeech();
+  }, [location.pathname]);
 
   // 1. Unauthenticated Route Protection Gate
   if (!user) {
@@ -68,7 +72,6 @@ function AppLayout() {
               <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
               <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
               <Route path="/ai-farming" element={<PageTransition><AIFarmingPage /></PageTransition>} />
-              <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>
@@ -110,7 +113,6 @@ function AppLayout() {
             <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
             <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
             <Route path="/ai-farming" element={<PageTransition><AIFarmingPage /></PageTransition>} />
-            <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AnimatePresence>
@@ -139,8 +141,6 @@ function AppLayout() {
               <Route path="/map" element={<PageTransition><MapViewPage /></PageTransition>} />
               <Route path="/crop-health" element={<PageTransition><CropHealthPage /></PageTransition>} />
               <Route path="/disease-detection" element={<PageTransition><CropHealthPage /></PageTransition>} />
-              <Route path="/satellite" element={<PageTransition><SatellitePage /></PageTransition>} />
-              <Route path="/field-health" element={<PageTransition><SatellitePage /></PageTransition>} />
               <Route path="/crop-recommendation" element={<PageTransition><CropRecommendation /></PageTransition>} />
               <Route path="/weather" element={<PageTransition><WeatherPage /></PageTransition>} />
               <Route path="/irrigation" element={<PageTransition><IrrigationPage /></PageTransition>} />

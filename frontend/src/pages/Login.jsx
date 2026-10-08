@@ -7,7 +7,7 @@ import AgroVisionLogo from '../components/AgroVisionLogo';
 
 export default function Login() {
   const location = useLocation();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -112,6 +112,18 @@ export default function Login() {
             </div>
           )}
         </div>
+
+        {/* Registration / Action Success Notice */}
+        {location.state?.successMessage && !error && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2.5"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <span>{location.state.successMessage}</span>
+          </motion.div>
+        )}
 
         {/* Inline Error Notice */}
         {error && (

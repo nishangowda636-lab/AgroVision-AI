@@ -1,6 +1,6 @@
 # AgroVision AI — Intelligent Autonomous Agricultural Ecosystem
 
-AgroVision AI is an end-to-end intelligent precision agriculture platform designed to empower smallholder and commercial farmers with real-time agronomic intelligence, satellite indices, IoT telemetry, smart irrigation control, and state-of-the-art machine learning models.
+AgroVision AI is an end-to-end intelligent precision agriculture platform designed to empower smallholder and commercial farmers with real-time agronomic intelligence, IoT telemetry, smart irrigation control, and state-of-the-art machine learning models.
 
 ---
 
@@ -9,24 +9,22 @@ AgroVision AI is an end-to-end intelligent precision agriculture platform design
 The **AI Farm Agent** is an autonomous agricultural co-pilot designed specifically for the **Farmer** role. It synthesizes all real farm parameters into a prioritized daily farm plan and provides conversational guidance in 11 Indian languages.
 
 ### 1. Data Sources & Synthesis Pipeline
-The AI Farm Agent unifies 10 core agricultural data streams:
+The AI Farm Agent unifies 9 core agricultural data streams:
 1. **Farm Setup**: GPS coordinates, Soil Type, Soil pH, Laboratory Nitrogen (N), Phosphorus (P), Potassium (K), Farm Acreage, Crop, and Crop Variety.
 2. **Weather Intelligence**: High-resolution Open-Meteo live radar, ambient temperature, relative humidity, wind speed, precipitation probability, and rainfall amount (mm).
 3. **IoT Sensors**: Live Soil Moisture (%) probe readings, sensor hardware status (Online/Offline), and telemetry integrity.
 4. **Pump Controller & Smart Borewell**: Automatic/Manual mode, relay status (ON/OFF), and Rain-Lock safety interlocks.
 5. **Crop Health AI Pathology**: MobileNetV2 computer vision leaf scans, detected disease problem, severity grading (Low, Moderate, High), and spread trend.
-6. **Satellite Field Health**: European Space Agency (ESA) Copernicus Sentinel-2 L2A 10m multispectral NDVI/NDMI canopy vigor indices, spatial stress zones, and affected acreage.
-7. **Crop Stage Lifecycle**: Growing Degree Days (GDD) phenological model tracking crop age in days, active growth stage, days to next stage transition, and stage-tailored nutrition.
-8. **Smart Irrigation Engine**: FAO-56 Penman-Monteith crop water depletion physics and Gradient Boosting classification.
-9. **Fertilizer Advisor Engine**: ICAR/UAS nutrient balance models, stage-specific split dosage, and rain-runoff avoidance.
-10. **Yield Prediction & Activity History**: Predicted harvest yield (tonnes/acre), crop calendar events, and farm financial ledger transactions.
+6. **Crop Stage Lifecycle**: Growing Degree Days (GDD) phenological model tracking crop age in days, active growth stage, days to next stage transition, and stage-tailored nutrition.
+7. **Smart Irrigation Engine**: FAO-56 Penman-Monteith crop water depletion physics and Gradient Boosting classification.
+8. **Fertilizer Advisor Engine**: ICAR/UAS nutrient balance models, stage-specific split dosage, and rain-runoff avoidance.
+9. **Yield Prediction & Activity History**: Predicted harvest yield (tonnes/acre), crop calendar events, and farm financial ledger transactions.
 
 ### 2. Decision Logic & Conflict Resolution
 - **Weather vs. Soil Moisture Conflict**: If the soil moisture probe indicates dry root-zone ($< 38\%$) but meteorological radar forecasts imminent rainfall ($\ge 50\%$), the agent explicitly explains the conflict:
   > *"CONFLICT RESOLVED: Soil moisture sensor reports deficit, but live radar indicates rainfall. Prioritizing rain-lock withholding to prevent waterlogging, soil compaction, and expensive nutrient leaching."*
 - **Fertilizer Rain-Leaching Lock**: When rain probability $\ge 50\%$, the agent warns against broadcasting granular fertilizer or foliar sprays to prevent chemical runoff.
 - **Sensor Offline Handling**: When IoT sensors are offline, the agent explicitly labels recommendations as *"Sensor Offline — Model Estimated"* using soil texture and ambient temperature, advising physical topsoil verification without inventing fake readings.
-- **Satellite Stress Zone Ground Scouting**: When Sentinel-2 multispectral scans detect localized canopy stress (Mean NDVI $< 0.60$ or affected area $> 0$ acres), the agent schedules physical ground scouting in the highlighted field quadrant.
 
 ### 3. AI / LLM Integration & Structured Response Format
 The agent integrates with Google Gemini / LLM REST APIs when `GEMINI_API_KEY` or `AI_API_KEY` is configured in the environment, with an automated fallback to the local agronomic reasoning engine.
@@ -39,7 +37,7 @@ All important farmer advisories follow the standardized 5-point format:
 - **CAUTION**: Practical safety precautions and risk prevention advice.
 
 ### 4. Safety & Agronomic Integrity Rules
-- **No Fake Data**: Sensor readings, weather forecasts, and satellite results are never invented. Missing parameters are explicitly marked as "Data unavailable".
+- **No Fake Data**: Sensor readings and weather forecasts are never invented. Missing parameters are explicitly marked as "Data unavailable".
 - **No Absolute Medical Claims**: Diseases are diagnosed with confidence scores and require physical ground scouting.
 - **No Yield Guarantees**: Yield predictions are presented with statistical confidence intervals.
 - **Machinery Fail-Safes**: Machinery and irrigation pumps are never activated without verified hardware safety checks and rain-locks.
@@ -114,21 +112,6 @@ Farmers can mark recommendations as:
   - `AVOID BROADCASTING`: Triggered on rain $\ge 5.0\text{ mm}$ to prevent chemical fertilizer leaching and toxic surface runoff.
   - `HIGH FUNGAL RISK`: Triggered on relative humidity $\ge 70\%$ to alert farmers to inspect lower canopies for mildew/blight.
   - `HOLD FOLIAR SPRAY`: Triggered on wind speed $\ge 18\text{ km/h}$ to avoid dangerous chemical droplet drift.
-
-### 7. Satellite Field Health & Multispectral Remote Sensing (Sentinel-2 L2A)
-- **Data Source**: European Space Agency (ESA) Copernicus Sentinel-2 MSI Level-2A (10m Multispectral) via AWS Earth Search STAC API & Microsoft Planetary Computer
-- **Spectral Bands**: B02 (Blue), B03 (Green), B04 (Red), B08 (NIR), B11 (SWIR)
-- **Spectral Indices**:
-  - **NDVI (Normalized Difference Vegetation Index)**: $(B08 - B04) / (B08 + B04)$ measuring photosynthetic canopy vigor.
-  - **NDMI (Normalized Difference Moisture Index)**: $(B08 - B11) / (B08 + B11)$ measuring canopy water content.
-  - **EVI (Enhanced Vegetation Index)**: Soil & atmospheric aerosol-corrected vegetative index.
-- **Capabilities**:
-  - Live STAC scene retrieval with actual capture dates and cloud cover percentages.
-  - Spatial quadrant health zones (North-East, North-West, South-East, South-West) with agronomic stress cause hypotheses.
-  - Interactive on-map field boundary polygon drawing & GeoJSON persistence.
-  - Historical orbital pass timeline comparison (What Changed? delta tracking).
-  - Joint cross-correlation with IoT soil moisture and Open-Meteo precipitation models.
-  - Clear screening disclaimers with direct links to Crop Health and Smart Irrigation.
 
 ---
 

@@ -55,7 +55,14 @@ const POPULAR_CROPS = [
   'Arhar/Tur',
   'Sunflower',
   'Sesamum',
-  'Coffee'
+  'Coffee',
+  'Black Pepper',
+  'Cardamom',
+  'Arecanut',
+  'Coconut',
+  'Tea',
+  'Ginger',
+  'Turmeric'
 ];
 
 const CROP_STAGES = [
@@ -593,7 +600,7 @@ export default function IrrigationPage() {
 
           <div className="flex items-center justify-between text-[11px] text-[#8FA59B] pt-0.5">
             <span>Forecast Feed:</span>
-            <span className="text-[#14B8A6] font-semibold">Open-Meteo Satellite Radar</span>
+            <span className="text-[#14B8A6] font-semibold">Open-Meteo Weather Radar</span>
           </div>
         </div>
 

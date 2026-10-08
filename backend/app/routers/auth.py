@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.models import User, Farm, Sensor, PumpController
+from app.models.models import User
 from app.schemas.schemas import UserRegister, UserLogin, Token, UserOut, UserUpdate, LanguageUpdate, PasswordChangeIn
 from app.utils.auth import get_password_hash, verify_password, create_access_token, get_current_user
 
@@ -25,66 +25,6 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
-    # Auto-provision default farm and sensors for new farmers
-    farm_first_name = user_in.full_name.strip().split()[0] if user_in.full_name else "My"
-    default_farm = Farm(
-        user_id=new_user.id,
-        name=f"{farm_first_name}'s Green Farm",
-        size_acres=2.5,
-        location_name="Mandya, Karnataka",
-        latitude=12.5218,
-        longitude=76.8951,
-        soil_type="Loam",
-        soil_ph=6.5,
-        nitrogen=140.0,
-        phosphorus=40.0,
-        potassium=200.0,
-        water_source="Borewell",
-        irrigation_method="Drip Irrigation",
-        crop="Tomato",
-        crop_variety="Arka Rakshak (Hybrid)",
-        sowing_date="2026-06-01",
-        expected_harvest="2026-09-30"
-    )
-    db.add(default_farm)
-    db.commit()
-    db.refresh(default_farm)
-
-    sensors_to_create = [
-        ("Soil Moisture Node", "moisture", "%", 42.0, "Online"),
-        ("Air Temperature Node", "temp", "°C", 27.5, "Online"),
-        ("Air Humidity Node", "humidity", "%", 68.0, "Online"),
-        ("Soil pH Probe", "ph", "pH", 6.5, "Online"),
-        ("Soil NPK Sensor", "npk", "mg/kg", 140.0, "Online"),
-        ("Water Tank Level", "tank", "%", 85.0, "Online")
-    ]
-    for s_name, s_type, s_unit, s_val, s_status in sensors_to_create:
-        db.add(Sensor(
-            farm_id=default_farm.id,
-            name=s_name,
-            sensor_type=s_type,
-            unit=s_unit,
-            current_value=s_val,
-            status=s_status
-        ))
-
-    db.add(PumpController(
-        farm_id=default_farm.id,
-        name=f"{default_farm.name} - Borewell Controller",
-        device_id=f"ESP32-PUMP-{default_farm.id:04d}",
-        status="OFF",
-        mode="AUTO",
-        is_simulated=True,
-        hardware_connected=False,
-        emergency_stopped=False,
-        rain_lock=False,
-        moisture_low_threshold=40.0,
-        moisture_high_threshold=60.0,
-        target_duration_mins=30,
-        last_command="SYSTEM_INIT"
-    ))
-    db.commit()
 
     token = create_access_token(data={"sub": str(new_user.id)})
     return {

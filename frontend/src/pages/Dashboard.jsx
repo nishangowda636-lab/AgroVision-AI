@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useFarm } from '../context/FarmContext';
@@ -24,7 +24,6 @@ import {
   Loader2,
   Edit3,
   Clock,
-  Satellite,
   Power,
   Activity,
   Octagon,
@@ -51,7 +50,7 @@ export default function Dashboard() {
   const [todayPlan, setTodayPlan] = useState(null);
   const [cropStage, setCropStage] = useState(null);
   const [iotStatus, setIotStatus] = useState(null);
-  const [satelliteStatus, setSatelliteStatus] = useState(null);
+  const [diseaseScans, setDiseaseScans] = useState([]);
   const [pumpActionLoading, setPumpActionLoading] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,8 +62,6 @@ export default function Dashboard() {
   const [selectedStageToOverride, setSelectedStageToOverride] = useState('');
   const [overridingStage, setOverridingStage] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
-
-  const healthScore = 88;
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -88,9 +85,9 @@ export default function Dashboard() {
       }).catch(() => ({ data: null })),
       api.get(`/farms/${activeFarm.id}/crop-stage`).catch(() => ({ data: null })),
       api.get(`/pumps/automation-status/${activeFarm.id}`).catch(() => ({ data: null })),
-      api.get(`/satellite/field-health/${activeFarm.id}`).catch(() => ({ data: null }))
+      api.get('/crop-health/history', { params: { farm_id: activeFarm.id } }).catch(() => ({ data: [] }))
     ])
-      .then(([wRes, sRes, mRes, pRes, cRes, iotRes, satRes]) => {
+      .then(([wRes, sRes, mRes, pRes, cRes, iotRes, dRes]) => {
         setWeatherData(wRes.data);
         setSensors(sRes.data);
         if (pRes.data) {
@@ -102,7 +99,7 @@ export default function Dashboard() {
           setSelectedStageToOverride(cRes.data.active_stage);
         }
         if (iotRes.data) setIotStatus(iotRes.data);
-        if (satRes.data) setSatelliteStatus(satRes.data);
+        if (dRes?.data) setDiseaseScans(Array.isArray(dRes.data) ? dRes.data : []);
 
         const matched =
           mRes.data.find((p) =>
@@ -249,6 +246,131 @@ export default function Dashboard() {
   const moistureSensor = sensors.find((s) => s.sensor_type === 'moisture');
   const moistureVal = moistureSensor?.current_value;
 
+  // Dynamic Farm Health & Telemetry-based scoring
+  const healthDetails = useMemo(() => {
+    let score = 92; // Default baseline for a healthy active field
+
+    // 1. Crop Stage Context (e.g. Sowing / Day 1 has naturally sparse canopy)
+    const isEarlyStage = (cropStage?.crop_age_days !== undefined && cropStage?.crop_age_days <= 10) ||
+                         ['Sowing', 'Germination', 'Seedling', 'Nursery'].includes(cropStage?.active_stage);
+
+    // 2. IoT Soil Moisture Telemetry
+    if (moistureVal !== undefined && moistureVal !== null) {
+      const moist = Number(moistureVal);
+      if (moist < 22) {
+        score -= 15; // Severe soil drought stress
+      } else if (moist < 32) {
+        score -= 7;  // Low moisture deficit
+      } else if (moist > 82) {
+        score -= 12; // Waterlogging risk
+      } else if (moist >= 40 && moist <= 65) {
+        score += 2;  // Optimal root-zone hydration
+      }
+    }
+
+    // 4. Disease / Pathology Telemetry
+    const recentScan = diseaseScans && diseaseScans.length > 0 ? diseaseScans[0] : null;
+    let diseaseRisk = 'Low';
+    let diseaseRiskColor = 'text-[#10B981]';
+    let cropHealthPct = 95;
+
+    if (recentScan) {
+      const isUnhealthy = recentScan.health_status && recentScan.health_status !== 'Healthy';
+      const sev = (recentScan.severity || '').toLowerCase();
+      if (isUnhealthy || sev.includes('critical') || sev.includes('high')) {
+        diseaseRisk = 'High';
+        diseaseRiskColor = 'text-red-400';
+        cropHealthPct = Math.max(45, Math.round(100 - (recentScan.confidence || 75) * 0.5));
+        score -= 20;
+      } else if (sev.includes('moderate')) {
+        diseaseRisk = 'Moderate';
+        diseaseRiskColor = 'text-amber-400';
+        cropHealthPct = 78;
+        score -= 10;
+      } else {
+        cropHealthPct = Math.min(98, Math.round(Number(recentScan.confidence || 92)));
+      }
+    }
+
+    // 5. Weather Stress Telemetry
+    if (weatherData) {
+      const temp = Number(weatherData.temperature || 25);
+      const rainProb = Number(weatherData.rainfall_prob_pct || weatherData.rain_prob || 0);
+      if (temp > 38 || temp < 8) {
+        score -= 6;
+      }
+      if (rainProb >= 85) {
+        score -= 3;
+      }
+    }
+
+    // 6. Action Items / Unresolved Alerts in Farm Plan
+    const actions = todayPlan?.actions || todayPlan?.today_plan || [];
+    const urgentIncomplete = actions.filter(
+      (a) => (a.priority === 1 || a.priority === 'HIGH' || a.severity === 'urgent') && !a.is_completed && a.status !== 'COMPLETED'
+    ).length;
+    if (urgentIncomplete > 0) {
+      score -= Math.min(12, urgentIncomplete * 4);
+    }
+
+    const finalScore = Math.min(98, Math.max(25, Math.round(score)));
+
+    let badgeText = 'Optimal (Green)';
+    let badgeClass = 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/25';
+    let statusLabel = 'Healthy';
+    let statusColor = 'text-[#10B981]';
+
+    if (finalScore >= 80) {
+      badgeText = 'Optimal (Green)';
+      badgeClass = 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/25';
+      statusLabel = 'Healthy';
+      statusColor = 'text-[#10B981]';
+    } else if (finalScore >= 65) {
+      badgeText = 'Moderate (Yellow)';
+      badgeClass = 'bg-amber-400/15 text-amber-400 border-amber-400/25';
+      statusLabel = 'Fair Condition';
+      statusColor = 'text-amber-400';
+    } else {
+      badgeText = 'Stress Alert (Red)';
+      badgeClass = 'bg-red-400/15 text-red-400 border-red-400/25';
+      statusLabel = 'Attention Needed';
+      statusColor = 'text-red-400';
+    }
+
+    return {
+      score: finalScore,
+      badgeText,
+      badgeClass,
+      statusLabel,
+      statusColor,
+      cropHealthPct,
+      diseaseRisk,
+      diseaseRiskColor
+    };
+  }, [moistureVal, diseaseScans, weatherData, todayPlan, cropStage]);
+
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) {
+      return {
+        greeting: 'Good Morning',
+        sub: 'Your farm intelligence for today.'
+      };
+    } else if (hour >= 12 && hour < 17) {
+      return {
+        greeting: 'Good Afternoon',
+        sub: 'Your farm intelligence for this afternoon.'
+      };
+    } else {
+      return {
+        greeting: 'Good Evening',
+        sub: 'Your farm intelligence for this evening.'
+      };
+    }
+  };
+
+  const { greeting, sub: timeGreetingSub } = getTimeGreeting();
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto selection:bg-[#10B981] selection:text-black">
       {/* Toast Notification */}
@@ -270,10 +392,10 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1B382D] pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F3F7F5] tracking-tight font-heading">
-            Good Morning, {user?.full_name?.split(' ')[0] || 'Farmer'} 👋
+            {greeting}, {user?.full_name?.split(' ')[0] || 'Farmer'} 👋
           </h1>
           <p className="text-xs sm:text-sm text-[#8FA59B] mt-0.5">
-            Your farm intelligence for today.
+            {timeGreetingSub}
           </p>
         </div>
 
@@ -349,22 +471,24 @@ export default function Dashboard() {
                 <span className="text-[11px] font-bold text-[#8FA59B] uppercase tracking-wider font-mono">
                   FARM HEALTH
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] text-[11px] font-bold border border-[#10B981]/25">
-                  Optimal (Green)
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${healthDetails.badgeClass}`}>
+                  {healthDetails.badgeText}
                 </span>
               </div>
 
               <div className="flex items-baseline gap-3 my-1">
                 <span className="text-4xl sm:text-5xl font-black text-[#F3F7F5] tracking-tight font-heading">
-                  {healthScore}
+                  {healthDetails.score}
                 </span>
                 <span className="text-xl font-semibold text-[#8FA59B]">/ 100</span>
-                <span className="text-sm font-bold text-[#10B981] ml-2">Healthy</span>
+                <span className={`text-sm font-bold ml-2 ${healthDetails.statusColor}`}>
+                  {healthDetails.statusLabel}
+                </span>
               </div>
 
               <div className="pt-2 border-t border-[#1B382D] flex items-center justify-between text-xs text-[#8FA59B]">
                 <span>Crop • Soil • Weather • Field conditions</span>
-                <span className="text-[#F3F7F5] font-semibold">{activeFarm?.crop || 'Tomato'} (Day {cropStage?.crop_age_days || 1})</span>
+                <span className="text-[#F3F7F5] font-semibold">{activeFarm?.crop || 'Crop'} (Day {cropStage?.crop_age_days || 1})</span>
               </div>
             </div>
 
@@ -625,10 +749,10 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-[#8FA59B] font-bold uppercase">Crop Health</span>
-                  <Heart className="w-3.5 h-3.5 text-[#10B981]" />
+                  <Heart className={`w-3.5 h-3.5 ${healthDetails.statusColor}`} />
                 </div>
-                <p className="text-xl font-bold text-[#10B981]">92%</p>
-                <p className="text-[11px] text-[#8FA59B]">Optimal</p>
+                <p className={`text-xl font-bold ${healthDetails.statusColor}`}>{healthDetails.cropHealthPct}%</p>
+                <p className="text-[11px] text-[#8FA59B]">{healthDetails.statusLabel}</p>
               </Link>
 
               {/* 2. Soil Moisture */}
@@ -643,7 +767,11 @@ export default function Dashboard() {
                 <p className="text-xl font-bold text-[#F3F7F5]">
                   {moistureVal !== undefined ? `${moistureVal}%` : '41%'}
                 </p>
-                <p className="text-[11px] text-[#8FA59B]">Adequate</p>
+                <p className="text-[11px] text-[#8FA59B]">
+                  {moistureVal !== undefined
+                    ? (moistureVal < 30 ? 'Low Deficit' : moistureVal > 75 ? 'Excess Moisture' : 'Adequate')
+                    : 'Adequate'}
+                </p>
               </Link>
 
               {/* 3. Disease Risk */}
@@ -653,10 +781,12 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-[#8FA59B] font-bold uppercase">Disease Risk</span>
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                  <ShieldCheck className={`w-3.5 h-3.5 ${healthDetails.diseaseRiskColor}`} />
                 </div>
-                <p className="text-xl font-bold text-[#10B981]">Low</p>
-                <p className="text-[11px] text-[#8FA59B]">Routine scouting</p>
+                <p className={`text-xl font-bold ${healthDetails.diseaseRiskColor}`}>{healthDetails.diseaseRisk}</p>
+                <p className="text-[11px] text-[#8FA59B]">
+                  {healthDetails.diseaseRisk === 'High' ? 'Treatment needed' : healthDetails.diseaseRisk === 'Moderate' ? 'Monitor closely' : 'Routine scouting'}
+                </p>
               </Link>
 
               {/* 4. Crop Stage */}
@@ -694,7 +824,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-[#F3F7F5] flex items-center gap-2">
-                  <Satellite className="w-4 h-4 text-[#10B981]" />
+                  <MapPin className="w-4 h-4 text-[#10B981]" />
                   <span>FARM MAP & BOUNDARY OVERVIEW</span>
                 </h3>
                 <p className="text-xs text-[#8FA59B]">
@@ -703,10 +833,10 @@ export default function Dashboard() {
               </div>
 
               <Link
-                to="/satellite"
+                to="/map"
                 className="text-xs font-semibold text-[#10B981] hover:underline flex items-center gap-1"
               >
-                <span>Full Satellite Radar</span>
+                <span>Full Farm Map</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

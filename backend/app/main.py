@@ -12,7 +12,7 @@ from app.routers import (
     fertilizer, fertilizer_recommendation, crops, yield_api, market_prices,
     profit, assistant, notifications, admin, messages,
     calendar, government_services, government_schemes, calculator, regions, pumps,
-    ledger, satellite, ai_farm_agent, models_status, marketplace
+    ledger, ai_farm_agent, models_status, marketplace
 )
 
 # Initialize database tables and run schema auto-migrations
@@ -44,7 +44,6 @@ app.include_router(ai_farm_agent.router)
 app.include_router(weather.router)
 app.include_router(sensors.router)
 app.include_router(pumps.router)
-app.include_router(satellite.router)
 app.include_router(disease.router)
 app.include_router(disease.crop_health_router)
 app.include_router(smart_irrigation.router)

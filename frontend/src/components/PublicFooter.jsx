@@ -17,7 +17,7 @@ export default function PublicFooter() {
             />
           </Link>
           <p className="text-xs text-[#8FA59B] leading-relaxed pt-1">
-            Commercial Digital Farm Operating System uniting satellite multispectral imaging, IoT soil telemetry, and predictive agronomic intelligence.
+            Commercial Digital Farm Operating System uniting IoT soil telemetry, computer vision plant pathology, and predictive agronomic intelligence.
           </p>
           <div className="flex items-center gap-1.5 text-[11px] text-[#10B981] font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
@@ -33,7 +33,6 @@ export default function PublicFooter() {
             <li><Link to="/about" className="hover:text-[#10B981] transition-colors">About AgroVision</Link></li>
             <li><Link to="/features" className="hover:text-[#10B981] transition-colors">OS Features</Link></li>
             <li><Link to="/ai-farming" className="hover:text-[#10B981] transition-colors">AI Farming Intelligence</Link></li>
-            <li><Link to="/contact" className="hover:text-[#10B981] transition-colors">Advisory & Contact</Link></li>
           </ul>
         </div>
 
@@ -56,7 +55,7 @@ export default function PublicFooter() {
             Farmer-owned field telemetry • Multi-tenant database isolation • Calibrated ICAR & FAO-56 models.
           </p>
           <div className="pt-1 flex flex-col gap-1.5 text-[#8FA59B] text-[11px]">
-            <Link to="/contact" className="hover:text-[#10B981] transition-colors">Kisan Call Center: 1551</Link>
+            <span className="text-[#8FA59B]">Kisan Toll-Free: 1551</span>
             <Link to="/about" className="hover:text-[#10B981] transition-colors">Farmer Data Ownership Policy</Link>
           </div>
         </div>

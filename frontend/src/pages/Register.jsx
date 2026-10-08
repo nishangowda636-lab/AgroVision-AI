@@ -34,8 +34,13 @@ export default function Register() {
     if (res.success) {
       setIsSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
-      }, 400);
+        navigate('/login', {
+          state: {
+            registeredEmail: email,
+            successMessage: 'Account created successfully! Please sign in with your email and password.'
+          }
+        });
+      }, 1000);
     } else {
       setError(
         res.error && res.error.toLowerCase().includes('already registered')
@@ -201,7 +206,7 @@ export default function Register() {
             ) : isSuccess ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-slate-900" />
-                <span>Account Created! Launching...</span>
+                <span>Account Created! Redirecting to Sign In...</span>
               </>
             ) : (
               <>

@@ -74,7 +74,6 @@ class Farm(Base):
     plan_tasks = relationship("FarmPlanTaskRecord", back_populates="farm", cascade="all, delete-orphan")
     pump_controller = relationship("PumpController", uselist=False, back_populates="farm", cascade="all, delete-orphan")
     pump_events = relationship("PumpEvent", back_populates="farm", cascade="all, delete-orphan")
-    satellite_observations = relationship("SatelliteObservation", back_populates="farm", cascade="all, delete-orphan")
 
 class Sensor(Base):
     __tablename__ = "sensors"
@@ -278,7 +277,7 @@ class FarmPlanTaskRecord(Base):
     task_key: Mapped[str] = mapped_column(String, nullable=False, index=True)
     plan_date: Mapped[str] = mapped_column(String, nullable=False, index=True) # YYYY-MM-DD
     title: Mapped[str] = mapped_column(String, nullable=False)
-    action_type: Mapped[str] = mapped_column(String, nullable=False) # weather, irrigation, crop_stage, crop_health, fertilizer, market, satellite
+    action_type: Mapped[str] = mapped_column(String, nullable=False) # weather, irrigation, crop_stage, crop_health, fertilizer, market
     status: Mapped[str] = mapped_column(String, default="PENDING") # PENDING, IN_PROGRESS, COMPLETED, SKIPPED
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     farmer_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -331,29 +330,6 @@ class PumpEvent(Base):
 
     farm = relationship("Farm", back_populates="pump_events")
 
-class SatelliteObservation(Base):
-    __tablename__ = "satellite_observations"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    farm_id: Mapped[int] = mapped_column(Integer, ForeignKey("farms.id"), nullable=False, index=True)
-    observation_date: Mapped[str] = mapped_column(String, nullable=False, index=True) # YYYY-MM-DD
-    satellite_provider: Mapped[str] = mapped_column(String, default="Sentinel-2 L2A / Copernicus Multispectral")
-    resolution_meters: Mapped[float] = mapped_column(Float, default=10.0)
-    cloud_cover_pct: Mapped[float] = mapped_column(Float, default=0.0)
-    mean_ndvi: Mapped[float] = mapped_column(Float, nullable=False)
-    previous_ndvi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    ndvi_change_pct: Mapped[float] = mapped_column(Float, default=0.0)
-    health_status: Mapped[str] = mapped_column(String, default="Healthy") # Healthy, Moderate Stress, High Stress
-    affected_area_acres: Mapped[float] = mapped_column(Float, default=0.0)
-    health_zones_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # JSON array of zones
-    what_changed_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    possible_reasons_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # JSON list
-    recommended_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    iot_cross_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-
-    farm = relationship("Farm", back_populates="satellite_observations")
-
 class RegionData(Base):
     __tablename__ = "regional_data"
 
@@ -380,6 +356,14 @@ class MarketplaceProduct(Base):
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     official_product_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     official_brand_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    amazon_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    flipkart_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    estimated_price: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    rating: Mapped[Optional[float]] = mapped_column(Float, default=4.6)
+    key_benefits: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pack_size: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    redirect_platform: Mapped[Optional[str]] = mapped_column(String, default="Official Website")
+    redirect_button_text: Mapped[Optional[str]] = mapped_column(String, default="Buy on Official Website")
     source_name: Mapped[str] = mapped_column(String, nullable=False)
     source_type: Mapped[str] = mapped_column(String, default="manufacturer") # manufacturer or verified_retailer
     source_verified: Mapped[bool] = mapped_column(Boolean, default=False)

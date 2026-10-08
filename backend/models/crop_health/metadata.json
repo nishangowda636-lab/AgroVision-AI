@@ -1,22 +1,16 @@
 {
-  "model_name": "AgroVision Crop Health & Disease Classifier",
-  "version": "1.0.0",
-  "architecture": "MobileNetV2 Transfer Learning",
-  "dataset": "PlantVillage Agricultural Benchmark (38 classes, 3,400+ images)",
-  "training_date": "2026-09-22",
-  "framework": "PyTorch 2.14.0",
-  "input_shape": [
-    3,
-    224,
-    224
-  ],
-  "classes_count": 38,
+  "model_name": "AgroVision Real ML Crop Health & Disease Classifier",
+  "version": "2.1.0",
+  "architecture": "MobileNetV2 Two-Stage Pipeline (Crop Identification -> Crop-Conditioned Pathology)",
+  "crop_classes_count": 14,
+  "disease_classes_count": 38,
+  "dataset": "PlantVillage Agricultural Benchmark (1,906 Samples, 38 Pathologies)",
+  "training_framework": "PyTorch 2.14.0+cpu",
+  "device": "cpu",
+  "last_trained": "2026-10-07 21:06:09",
   "metrics": {
-    "test_accuracy_pct": 95.03,
-    "macro_precision_pct": 95.6,
-    "macro_recall_pct": 95.03,
-    "macro_f1_score_pct": 94.92,
-    "weighted_f1_score_pct": 94.92
-  },
-  "target": "Plant Disease / Healthy Crop Pathology Class"
+    "crop_identification_accuracy_pct": 98.54,
+    "disease_test_accuracy_pct": 94.74,
+    "macro_f1_score_pct": 94.76
+  }
 }

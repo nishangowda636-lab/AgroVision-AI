@@ -8,15 +8,6 @@ export const LANGUAGES = [
   { code: 'English', label: 'English' },
   { code: 'Kannada', label: 'ಕನ್ನಡ (Kannada)' },
   { code: 'Hindi', label: 'हिन्दी (Hindi)' },
-  { code: 'Telugu', label: 'తెలుగు (Telugu)' },
-  { code: 'Tamil', label: 'தமிழ் (Tamil)' },
-  { code: 'Malayalam', label: 'മലയാളം (Malayalam)' },
-  { code: 'Marathi', label: 'मराठी (Marathi)' },
-  { code: 'Bengali', label: 'বাংলা (Bengali)' },
-  { code: 'Gujarati', label: 'ગુજરાતી (Gujarati)' },
-  { code: 'Punjabi', label: 'ਪੰਜਾਬੀ (Punjabi)' },
-  { code: 'Odia', label: 'ଓଡ଼ିଆ (Odia)' },
-  { code: 'Urdu', label: 'اردو (Urdu)' },
 ];
 
 export const AuthProvider = ({ children }) => {
@@ -125,14 +116,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await api.post('/auth/register', formData);
-      const { access_token, user: userData } = res.data;
-      localStorage.setItem('agrovision_token', access_token);
-      localStorage.setItem('agrovision_user', JSON.stringify(userData));
-      setToken(access_token);
-      setUser(userData);
-      const userLang = userData.preferred_language || 'English';
-      setLanguage(userLang);
-      return { success: true };
+      // Do NOT automatically log in or save tokens to localStorage.
+      // User must explicitly log in after account creation.
+      return { success: true, data: res.data };
     } catch (err) {
       return { success: false, error: extractErrorMessage(err, 'Registration failed') };
     } finally {

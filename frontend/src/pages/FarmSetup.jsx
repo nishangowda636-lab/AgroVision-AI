@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFarm } from '../context/FarmContext';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +38,12 @@ export default function FarmSetup() {
   const [viewMode, setViewMode] = useState(farms.length > 0 ? 'manage' : 'wizard');
   const [step, setStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    if (farms.length === 0) {
+      setViewMode('wizard');
+    }
+  }, [farms.length]);
 
   // Delete modal state
   const [deletingFarm, setDeletingFarm] = useState(null);
@@ -487,17 +493,56 @@ export default function FarmSetup() {
                         onChange={(e) => setFormData({ ...formData, crop: e.target.value })}
                         className="os-input w-full py-2.5 text-xs cursor-pointer"
                       >
-                        <option value="Tomato" className="bg-[#0E1E18]">Tomato (Solanum lycopersicum)</option>
-                        <option value="Potato" className="bg-[#0E1E18]">Potato (Solanum tuberosum)</option>
-                        <option value="Cotton" className="bg-[#0E1E18]">Cotton (Gossypium)</option>
-                        <option value="Maize" className="bg-[#0E1E18]">Maize / Corn (Zea mays)</option>
-                        <option value="Wheat" className="bg-[#0E1E18]">Wheat (Triticum)</option>
-                        <option value="Rice" className="bg-[#0E1E18]">Rice / Paddy (Oryza sativa)</option>
-                        <option value="Chili" className="bg-[#0E1E18]">Green Chili (Capsicum annuum)</option>
-                        <option value="Sugarcane" className="bg-[#0E1E18]">Sugarcane (Saccharum officinarum)</option>
-                        <option value="Groundnut" className="bg-[#0E1E18]">Groundnut / Peanut (Arachis hypogaea)</option>
-                        <option value="Ragi" className="bg-[#0E1E18]">Finger Millet / Ragi (Eleusine coracana)</option>
-                        <option value="Onion" className="bg-[#0E1E18]">Onion (Allium cepa)</option>
+                        <optgroup label="🌱 Plantation & Spices" className="bg-[#081711] text-emerald-400 font-bold">
+                          <option value="Coffee" className="bg-[#0E1E18] text-[#F3F7F5]">Coffee (Coffea arabica / robusta)</option>
+                          <option value="Black Pepper" className="bg-[#0E1E18] text-[#F3F7F5]">Black Pepper (Piper nigrum)</option>
+                          <option value="Cardamom" className="bg-[#0E1E18] text-[#F3F7F5]">Cardamom (Elettaria cardamomum)</option>
+                          <option value="Arecanut" className="bg-[#0E1E18] text-[#F3F7F5]">Arecanut / Betel Nut (Areca catechu)</option>
+                          <option value="Tea" className="bg-[#0E1E18] text-[#F3F7F5]">Tea (Camellia sinensis)</option>
+                          <option value="Coconut" className="bg-[#0E1E18] text-[#F3F7F5]">Coconut (Cocos nucifera)</option>
+                          <option value="Rubber" className="bg-[#0E1E18] text-[#F3F7F5]">Rubber (Hevea brasiliensis)</option>
+                          <option value="Ginger" className="bg-[#0E1E18] text-[#F3F7F5]">Ginger (Zingiber officinale)</option>
+                          <option value="Turmeric" className="bg-[#0E1E18] text-[#F3F7F5]">Turmeric (Curcuma longa)</option>
+                        </optgroup>
+
+                        <optgroup label="🌾 Cereals & Millets" className="bg-[#081711] text-emerald-400 font-bold">
+                          <option value="Rice" className="bg-[#0E1E18] text-[#F3F7F5]">Rice / Paddy (Oryza sativa)</option>
+                          <option value="Wheat" className="bg-[#0E1E18] text-[#F3F7F5]">Wheat (Triticum aestivum)</option>
+                          <option value="Maize" className="bg-[#0E1E18] text-[#F3F7F5]">Maize / Corn (Zea mays)</option>
+                          <option value="Ragi" className="bg-[#0E1E18] text-[#F3F7F5]">Finger Millet / Ragi (Eleusine coracana)</option>
+                          <option value="Jowar" className="bg-[#0E1E18] text-[#F3F7F5]">Jowar / Sorghum (Sorghum bicolor)</option>
+                          <option value="Bajra" className="bg-[#0E1E18] text-[#F3F7F5]">Bajra / Pearl Millet (Pennisetum glaucum)</option>
+                          <option value="Barley" className="bg-[#0E1E18] text-[#F3F7F5]">Barley (Hordeum vulgare)</option>
+                        </optgroup>
+
+                        <optgroup label="🍅 Vegetables & Fruits" className="bg-[#081711] text-emerald-400 font-bold">
+                          <option value="Tomato" className="bg-[#0E1E18] text-[#F3F7F5]">Tomato (Solanum lycopersicum)</option>
+                          <option value="Chili" className="bg-[#0E1E18] text-[#F3F7F5]">Green Chili / Hot Pepper (Capsicum annuum)</option>
+                          <option value="Potato" className="bg-[#0E1E18] text-[#F3F7F5]">Potato (Solanum tuberosum)</option>
+                          <option value="Onion" className="bg-[#0E1E18] text-[#F3F7F5]">Onion (Allium cepa)</option>
+                          <option value="Brinjal" className="bg-[#0E1E18] text-[#F3F7F5]">Brinjal / Eggplant (Solanum melongena)</option>
+                          <option value="Cabbage" className="bg-[#0E1E18] text-[#F3F7F5]">Cabbage (Brassica oleracea)</option>
+                          <option value="Banana" className="bg-[#0E1E18] text-[#F3F7F5]">Banana (Musa acuminata)</option>
+                          <option value="Pomegranate" className="bg-[#0E1E18] text-[#F3F7F5]">Pomegranate (Punica granatum)</option>
+                          <option value="Mango" className="bg-[#0E1E18] text-[#F3F7F5]">Mango (Mangifera indica)</option>
+                        </optgroup>
+
+                        <optgroup label="💵 Cash & Commercial Crops" className="bg-[#081711] text-emerald-400 font-bold">
+                          <option value="Cotton" className="bg-[#0E1E18] text-[#F3F7F5]">Cotton (Gossypium hirsutum)</option>
+                          <option value="Sugarcane" className="bg-[#0E1E18] text-[#F3F7F5]">Sugarcane (Saccharum officinarum)</option>
+                          <option value="Tobacco" className="bg-[#0E1E18] text-[#F3F7F5]">Tobacco (Nicotiana tabacum)</option>
+                        </optgroup>
+
+                        <optgroup label="🥜 Pulses & Oilseeds" className="bg-[#081711] text-emerald-400 font-bold">
+                          <option value="Groundnut" className="bg-[#0E1E18] text-[#F3F7F5]">Groundnut / Peanut (Arachis hypogaea)</option>
+                          <option value="Soybean" className="bg-[#0E1E18] text-[#F3F7F5]">Soybean (Glycine max)</option>
+                          <option value="Mustard" className="bg-[#0E1E18] text-[#F3F7F5]">Mustard (Brassica nigra)</option>
+                          <option value="Gram" className="bg-[#0E1E18] text-[#F3F7F5]">Gram / Chickpea (Cicer arietinum)</option>
+                          <option value="Arhar" className="bg-[#0E1E18] text-[#F3F7F5]">Pigeon Pea / Tur (Cajanus cajan)</option>
+                          <option value="Moong" className="bg-[#0E1E18] text-[#F3F7F5]">Green Gram / Moong (Vigna radiata)</option>
+                          <option value="Urad" className="bg-[#0E1E18] text-[#F3F7F5]">Black Gram / Urad (Vigna mungo)</option>
+                          <option value="Sunflower" className="bg-[#0E1E18] text-[#F3F7F5]">Sunflower (Helianthus annuus)</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div>
@@ -506,7 +551,7 @@ export default function FarmSetup() {
                         type="text"
                         value={formData.crop_variety}
                         onChange={(e) => setFormData({ ...formData, crop_variety: e.target.value })}
-                        placeholder="e.g. Arka Rakshak / Pioneer 3302"
+                        placeholder="e.g. Arabica S.795 / Panniyur-1 / Pioneer 3302 / Arka Rakshak"
                         className="os-input w-full py-2.5 text-xs"
                       />
                     </div>

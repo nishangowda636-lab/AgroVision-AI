@@ -30,7 +30,25 @@ export default function FarmCalculatorPage() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const crops = ['Tomato', 'Chili', 'Maize', 'Cotton', 'Potato', 'Wheat', 'Rice'];
+  const crops = [
+    'Coffee',
+    'Black Pepper',
+    'Cardamom',
+    'Arecanut',
+    'Tea',
+    'Coconut',
+    'Tomato',
+    'Chili',
+    'Maize',
+    'Cotton',
+    'Potato',
+    'Wheat',
+    'Rice',
+    'Ginger',
+    'Turmeric',
+    'Sugarcane',
+    'Onion'
+  ];
 
   const calculate = async () => {
     setLoading(true);

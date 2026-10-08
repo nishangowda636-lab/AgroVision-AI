@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -19,13 +19,69 @@ import {
   Compass,
   Database,
   History,
-  Check
+  Check,
+  Volume2,
+  Square,
+  Play,
+  Radio,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  speakAgentMessage,
+  stopAgentSpeech,
+  getVoicePersonas,
+  getActivePersona,
+  setActivePersona,
+  isSpeechSupported
+} from '../utils/agentVoiceService';
 
 export default function AIFarmingPage() {
   const shouldReduceMotion = useReducedMotion();
   const { user } = useAuth();
+
+  const [previewLang, setPreviewLang] = useState('English');
+  const [previewPersona, setPreviewPersona] = useState(() => getActivePersona('English'));
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+
+  useEffect(() => {
+    const p = getActivePersona(previewLang);
+    setPreviewPersona(p);
+    stopAgentSpeech();
+    setIsPlayingVoice(false);
+  }, [previewLang]);
+
+  const handleToggleVoice = () => {
+    if (!isSpeechSupported()) {
+      alert('Speech synthesis is not supported on this browser.');
+      return;
+    }
+
+    if (isPlayingVoice) {
+      stopAgentSpeech();
+      setIsPlayingVoice(false);
+      return;
+    }
+
+    let speechText = '';
+    if (previewLang === 'Kannada') {
+      speechText = 'ನಮಸ್ಕಾರ ರೈತರೇ! ನಿಮ್ಮ ಕೋಲಾರ ಟೊಮೆಟೊ ತೋಟದ ಇಂದಿನ ಕೃಷಿ ಯೋಜನೆ: ಮೊದಲನೆಯದಾಗಿ, ಮುಂದಿನ 12 ಗಂಟೆಗಳಲ್ಲಿ ಮಳೆ ಬರುವ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ನೀರಾವರಿ ಮುಂದೂಡಿ. ಎರಡನೆಯದಾಗಿ, ಹೆಚ್ಚಿನ ಆರ್ದ್ರತೆಯಿಂದಾಗಿ ಕೆಳ ಎಲೆಗಳನ್ನು ಶಿಲೀಂಧ್ರ ರೋಗಕ್ಕಾಗಿ ತಪಾಸಣೆ ಮಾಡಿ. ಮೂರನೆಯದಾಗಿ, ಮಣ್ಣಿನ ತೇವಾಂಶ 62% ಇದ್ದು ಸೂಕ್ತವಾಗಿದೆ.';
+    } else if (previewLang === 'Hindi') {
+      speechText = 'नमस्ते किसान भाई! आपके खेत की आज की कार्य योजना: पहला, अगले 12 घंटों में बारिश के अनुमान के कारण सिंचाई टालें। दूसरा, अधिक नमी के कारण निचली पत्तियों की फंगल जांच करें। तीसरा, मिट्टी की नमी 62% है जो फसल के लिए अनुकूल है।';
+    } else {
+      speechText = 'Hello Farmer! Here is Today\'s prioritized farm plan: First, rain is expected within the next 12 hours, so delay irrigation. Second, inspect lower leaves for early fungal risk due to high humidity. Third, soil moisture is optimal at 62%.';
+    }
+
+    setIsPlayingVoice(true);
+    speakAgentMessage({
+      text: speechText,
+      language: previewLang,
+      persona: previewPersona,
+      onStart: () => setIsPlayingVoice(true),
+      onEnd: () => setIsPlayingVoice(false),
+      onError: () => setIsPlayingVoice(false)
+    });
+  };
 
   // 5-Stage How The AI Works Flow
   const aiWorkflow = [
@@ -292,7 +348,7 @@ export default function AIFarmingPage() {
           transition={{ duration: 0.35 }}
           className="bg-[#0E1E18] border border-[#1B382D] rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl"
         >
-          {/* Header with Example Disclaimer */}
+          {/* Header with Language Selector & Voice Action */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1B382D]">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -302,20 +358,114 @@ export default function AIFarmingPage() {
                 </h2>
               </div>
               <p className="text-xs text-[#8FA59B]">
-                Synthesizes field signals into a single daily farm agenda.
+                Synthesizes field signals into a single daily farm agenda in your regional language.
               </p>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/30 text-emerald-400 text-[11px] font-mono font-semibold self-start sm:self-auto">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Example AI Farm Plan</span>
+            {/* Audio Listen Button */}
+            <button
+              onClick={handleToggleVoice}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shadow-md ${
+                isPlayingVoice
+                  ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300 animate-pulse'
+                  : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25'
+              }`}
+            >
+              {isPlayingVoice ? (
+                <>
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                  <span>
+                    {previewLang === 'Kannada' ? 'ಧ್ವನಿ ನಿಲ್ಲಿಸಿ' : previewLang === 'Hindi' ? 'आवाज़ रोकें' : 'Stop Voice'}
+                  </span>
+                  <span className="flex items-center gap-0.5 ml-0.5 h-2.5">
+                    <span className="w-0.5 h-full bg-amber-400 animate-bounce" />
+                    <span className="w-0.5 h-2/3 bg-amber-400 animate-pulse" />
+                    <span className="w-0.5 h-full bg-amber-400 animate-bounce delay-75" />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>
+                    {previewLang === 'Kannada'
+                      ? `ಕನ್ನಡದಲ್ಲಿ ಆಲಿಸಿ (${previewPersona?.name?.split(' ')[0] || 'ಧ್ವನಿ'})`
+                      : previewLang === 'Hindi'
+                      ? `हिंदी में सुनें (${previewPersona?.name?.split(' ')[0] || 'आवाज़'})`
+                      : `Listen (${previewPersona?.name || 'Voice'})`}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Interactive Language & Distinct Voice Selector Bar */}
+          <div className="bg-[#08120E] border border-[#1B382D] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Language Pills */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono text-[#8FA59B] uppercase mr-1 flex items-center gap-1">
+                <Globe className="w-3 h-3 text-emerald-400" />
+                <span>Language:</span>
+              </span>
+              {[
+                { name: 'English', label: 'English', flag: '🇬🇧' },
+                { name: 'Kannada', label: 'ಕನ್ನಡ', flag: '🇮🇳' },
+                { name: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' }
+              ].map((lang) => {
+                const isSelected = previewLang === lang.name;
+                return (
+                  <button
+                    key={lang.name}
+                    onClick={() => setPreviewLang(lang.name)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-sm'
+                        : 'text-[#8FA59B] hover:text-[#F3F7F5] bg-[#0E1E18] border border-[#1B382D]'
+                    }`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Distinct Voice Personas */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono text-[#8FA59B] uppercase mr-1 flex items-center gap-1">
+                <Radio className="w-3 h-3 text-emerald-400" />
+                <span>Voice:</span>
+              </span>
+              {getVoicePersonas(previewLang).map((p) => {
+                const isCurrent = previewPersona?.id === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setPreviewPersona(p);
+                      setActivePersona(previewLang, p.id);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                      isCurrent
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                        : 'text-[#8FA59B] hover:text-[#F3F7F5] bg-[#0E1E18] border border-[#1B382D]'
+                    }`}
+                  >
+                    <span>{p.preferredGender === 'female' ? '👩‍🌾' : '👨‍🌾'}</span>
+                    <span>{p.name.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Today's Farm Plan Card Preview */}
+          {/* Today's Farm Plan Card Preview (Dynamic per Language) */}
           <div className="space-y-3">
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#577366] font-semibold">
-              TODAY'S PRIORITIZED ACTIONS
+              {previewLang === 'Kannada'
+                ? 'ಇಂದಿನ ಆದ್ಯತಾ ಕೃಷಿ ಕಾರ್ಯಗಳು (TODAY\'S PRIORITIZED ACTIONS)'
+                : previewLang === 'Hindi'
+                ? 'आज की प्राथमिकता कार्य योजना (TODAY\'S PRIORITIZED ACTIONS)'
+                : 'TODAY\'S PRIORITIZED ACTIONS'}
             </span>
 
             {/* Item 1: Delay Irrigation */}
@@ -325,13 +475,23 @@ export default function AIFarmingPage() {
               </div>
               <div className="flex-1 space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">Delay Irrigation</h4>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">
+                    {previewLang === 'Kannada'
+                      ? 'ನೀರಾವರಿ ಮುಂದೂಡಿ'
+                      : previewLang === 'Hindi'
+                      ? 'सिंचाई टालें'
+                      : 'Delay Irrigation'}
+                  </h4>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    High Priority
+                    {previewLang === 'Kannada' ? 'ಹೆಚ್ಚಿನ ಆದ್ಯತೆ' : previewLang === 'Hindi' ? 'उच्च प्राथमिकता' : 'High Priority'}
                   </span>
                 </div>
                 <p className="text-xs text-[#8FA59B] leading-relaxed">
-                  Rain is expected within the next 12 hours. Postponing irrigation will prevent waterlogging and conserve pump energy.
+                  {previewLang === 'Kannada'
+                    ? 'ಮುಂದಿನ 12 ಗಂಟೆಗಳಲ್ಲಿ ಮಳೆ ಬರುವ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ನೀರಾವರಿ ಮುಂದೂಡಿ. ಇದು ನೀರಿನ ಪೋಲಾಗುವುದನ್ನು ಮತ್ತು ಜಮೀನಿನಲ್ಲಿ ನೀರು ನಿಲ್ಲುವುದನ್ನು ತಡೆಯುತ್ತದೆ.'
+                    : previewLang === 'Hindi'
+                    ? 'अगले 12 घंटों में बारिश की संभावना है। सिंचाई टालने से जलभराव रुकेगा और बिजली व पानी की बचत होगी।'
+                    : 'Rain is expected within the next 12 hours. Postponing irrigation will prevent waterlogging and conserve pump energy.'}
                 </p>
               </div>
             </div>
@@ -343,13 +503,23 @@ export default function AIFarmingPage() {
               </div>
               <div className="flex-1 space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">Inspect Lower Leaves</h4>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">
+                    {previewLang === 'Kannada'
+                      ? 'ಕೆಳ ಎಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ'
+                      : previewLang === 'Hindi'
+                      ? 'निचली पत्तियों की जांच करें'
+                      : 'Inspect Lower Leaves'}
+                  </h4>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                    Attention
+                    {previewLang === 'Kannada' ? 'ಗಮನ ಅಗತ್ಯ' : previewLang === 'Hindi' ? 'ध्यान दें' : 'Attention'}
                   </span>
                 </div>
                 <p className="text-xs text-[#8FA59B] leading-relaxed">
-                  Continuous high humidity and canopy density create conditions for early fungal spots. Check underside foliage in Plot 1.
+                  {previewLang === 'Kannada'
+                    ? 'ಹೆಚ್ಚಿನ ಆರ್ದ್ರತೆ ಮತ್ತು ಎಲೆಗಳ ಸಾಂದ್ರತೆಯಿಂದಾಗಿ ಆರಂಭಿಕ ಶಿಲೀಂಧ್ರ ರೋಗದ ಲಕ್ಷಣಗಳು ಕಂಡುಬರಬಹುದು. ಪ್ಲಾಟ್ 1 ರಲ್ಲಿ ಎಲೆಗಳ ಕೆಳಭಾಗವನ್ನು ಪರೀಕ್ಷಿಸಿ.'
+                    : previewLang === 'Hindi'
+                    ? 'निरंतर उच्च आर्द्रता से फंगल धब्बे बनने की संभावना है। प्लॉट 1 में पत्तियों के पिछले हिस्से की जांच करें।'
+                    : 'Continuous high humidity and canopy density create conditions for early fungal spots. Check underside foliage in Plot 1.'}
                 </p>
               </div>
             </div>
@@ -361,13 +531,23 @@ export default function AIFarmingPage() {
               </div>
               <div className="flex-1 space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">Monitor Soil Moisture</h4>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#F3F7F5]">
+                    {previewLang === 'Kannada'
+                      ? 'ಮಣ್ಣಿನ ತೇವಾಂಶ ಮೇಲ್ವಿಚಾರಣೆ'
+                      : previewLang === 'Hindi'
+                      ? 'मृदा नमी की निगरानी करें'
+                      : 'Monitor Soil Moisture'}
+                  </h4>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                    Optimal
+                    {previewLang === 'Kannada' ? 'ಉತ್ತಮ ಸ್ಥಿತಿ' : previewLang === 'Hindi' ? 'अनुकूल' : 'Optimal'}
                   </span>
                 </div>
                 <p className="text-xs text-[#8FA59B] leading-relaxed">
-                  Current root zone moisture is at 62%, which is adequate for the current vegetative growth stage.
+                  {previewLang === 'Kannada'
+                    ? 'ಪ್ರಸ್ತುತ ಬೇರು ವಲಯದ ತೇವಾಂಶ 62% ಇದ್ದು, ಸಸ್ಯಕ ಬೆಳವಣಿಗೆಯ ಹಂತಕ್ಕೆ ಅತ್ಯಂತ ಸೂಕ್ತವಾಗಿದೆ.'
+                    : previewLang === 'Hindi'
+                    ? 'वर्तमान में जड़ क्षेत्र की नमी 62% है, जो वानस्पतिक अवस्था के लिए पर्याप्त और उपयुक्त है।'
+                    : 'Current root zone moisture is at 62%, which is adequate for the current vegetative growth stage.'}
                 </p>
               </div>
             </div>

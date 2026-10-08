@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useFarm } from '../context/FarmContext';
 import { useAuth } from '../context/AuthContext';
@@ -61,7 +61,14 @@ const POPULAR_CROPS = [
   'Arhar/Tur',
   'Sunflower',
   'Sesamum',
-  'Coffee'
+  'Coffee',
+  'Black Pepper',
+  'Cardamom',
+  'Arecanut',
+  'Coconut',
+  'Tea',
+  'Ginger',
+  'Turmeric'
 ];
 
 const CROP_STAGES = [
@@ -154,6 +161,22 @@ export default function FertilizerPage() {
       handleGetRecommendation(activeFarm, { crop, area, soil, stage, n, p, k, ph });
     }
   }, [activeFarm?.id]);
+
+  // Debounced auto-recalculation when the user modifies soil NPK, pH, Area, Crop, Stage, or Soil
+  const isInitialLoad = useRef(true);
+  useEffect(() => {
+    if (!activeFarm) return;
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleGetRecommendation();
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [selectedCrop, cropStage, soilType, areaAcres, nitrogen, phosphorus, potassium, soilPh]);
 
   useEffect(() => {
     api.get('/fertilizer-recommendation/model-info')
@@ -356,7 +379,7 @@ export default function FertilizerPage() {
           </h1>
           <p className="text-xs sm:text-sm text-[#8FA59B] mt-0.5">
             Targeted NPK deficit calculation, stage-specific fertilizer formulations, and weather runoff safety for{' '}
-            <strong className="text-[#F3F7F5] font-semibold">{activeFarm?.name}</strong> ({activeFarm?.crop || selectedCrop} • {activeFarm?.size_acres} Acres).
+            <strong className="text-[#F3F7F5] font-semibold">{activeFarm?.name}</strong> ({selectedCrop || activeFarm?.crop} • {areaAcres || activeFarm?.size_acres} Acres).
           </p>
         </div>
 
@@ -605,7 +628,7 @@ export default function FertilizerPage() {
             {weatherLoading ? (
               <div className="py-6 text-center text-[#8FA59B] text-xs flex flex-col items-center gap-2">
                 <Loader2 className="w-5 h-5 animate-spin text-[#10B981]" />
-                <span>Syncing satellite radar...</span>
+                <span>Syncing weather radar...</span>
               </div>
             ) : (
               <div className="space-y-2.5">

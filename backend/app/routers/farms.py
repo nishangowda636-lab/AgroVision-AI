@@ -9,7 +9,7 @@ from app.database.session import get_db
 from app.models.models import (
     Farm, User, Sensor, SensorReading, DiseaseDetection,
     PumpController, CropCalendarEvent, FarmPlanTaskRecord, Notification, AIConversation,
-    Expense, SatelliteObservation, YieldPrediction, FertilizerApplication
+    Expense, YieldPrediction, FertilizerApplication
 )
 from app.schemas.schemas import (
     FarmCreate, FarmUpdate, FarmOut,
@@ -162,28 +162,7 @@ def gather_farm_context_bundle(farm: Farm, db: Session, language: str = "English
         for t in ledger_txs_query
     ]
 
-    # 7. Satellite Field Health
-    latest_sat_obs = db.query(SatelliteObservation).filter(
-        SatelliteObservation.farm_id == farm.id
-    ).order_by(SatelliteObservation.observation_date.desc()).first()
-
-    satellite_data = None
-    if latest_sat_obs:
-        try:
-            zones_data = json.loads(latest_sat_obs.health_zones_json) if latest_sat_obs.health_zones_json else []
-        except Exception:
-            zones_data = []
-        satellite_data = {
-            "observation_date": latest_sat_obs.observation_date,
-            "mean_ndvi": latest_sat_obs.mean_ndvi,
-            "cloud_cover_pct": latest_sat_obs.cloud_cover_pct,
-            "health_status": latest_sat_obs.health_status,
-            "affected_area_acres": latest_sat_obs.affected_area_acres,
-            "what_changed_summary": latest_sat_obs.what_changed_summary,
-            "zones": zones_data
-        }
-
-    # 8. Fertilizer Applications
+    # 7. Fertilizer Applications
     latest_fertilizer = db.query(FertilizerApplication).filter(
         FertilizerApplication.farm_id == farm.id
     ).order_by(FertilizerApplication.date_applied.desc()).first()
@@ -240,7 +219,6 @@ def gather_farm_context_bundle(farm: Farm, db: Session, language: str = "English
         "weather_data": weather_data,
         "sensor_data": sensor_data,
         "pump_status": pump_status,
-        "satellite_data": satellite_data,
         "disease_scans": disease_scans,
         "fertilizer_status": fertilizer_status,
         "yield_prediction": yield_prediction,

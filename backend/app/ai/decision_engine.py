@@ -184,7 +184,11 @@ def generate_central_farm_decisions(
     elif language == "Tamil":
         voice_script = f"வணக்கம்! உங்கள் {farm_name} பண்ணையின் இன்றைய வழிகாட்டல்: {'மழை வாய்ப்பு உள்ளதால் போர்வெல் பாசனத்தை தவிர்க்கவும்.' if (rain_lock or rain_prob >= 60.0) else f'மண்ணின் ஈரப்பதம் {moisture}% ஆக உள்ளது.'} பயிர் வயது {crop_age} நாட்கள். சந்தையில் {crop} விலை ₹{market_price} ஆக உள்ளது."
     else:
-        voice_script = f"Good morning! Here is Today's Farm Intelligence for {farm_name}. {'Rain is expected today, so borewell irrigation is safely held.' if (rain_lock or rain_prob >= 60.0) else f'Soil moisture is at {moisture}%, so morning drip irrigation is recommended.'} Your {crop} is {crop_age} days old. Market price is strong at ₹{market_price} per kg. Have a great farming day!"
+        hour = datetime.now().hour
+        greeting = "Good morning" if 4 <= hour < 12 else ("Good afternoon" if 12 <= hour < 17 else "Good evening")
+        time_slot = "Today's" if 4 <= hour < 12 else ("This afternoon's" if 12 <= hour < 17 else "This evening's")
+        irr_time = "morning" if 4 <= hour < 12 else ("afternoon" if 12 <= hour < 17 else "evening")
+        voice_script = f"{greeting}! Here is {time_slot} Farm Intelligence for {farm_name}. {'Rain is expected today, so borewell irrigation is safely held.' if (rain_lock or rain_prob >= 60.0) else f'Soil moisture is at {moisture}%, so {irr_time} drip irrigation is recommended.'} Your {crop} is {crop_age} days old. Market price is strong at ₹{market_price} per kg. Have a great farming day!"
 
     return {
         "farm_id": farm_id,

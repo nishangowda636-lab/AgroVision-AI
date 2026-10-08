@@ -58,7 +58,6 @@ def get_ai_farm_agent_today_plan(
         yield_prediction=bundle.get("yield_prediction"),
         activity_history=bundle["activity_history"],
         pump_status=bundle["pump_status"],
-        satellite_data=bundle.get("satellite_data"),
         completed_task_keys=bundle.get("completed_task_keys"),
         task_status_map=bundle.get("task_status_map"),
         task_notes_map=bundle.get("task_notes_map"),
@@ -101,7 +100,6 @@ def chat_with_ai_farm_agent(
             yield_prediction=bundle.get("yield_prediction"),
             activity_history=bundle["activity_history"],
             pump_status=bundle["pump_status"],
-            satellite_data=bundle.get("satellite_data"),
             completed_task_keys=bundle.get("completed_task_keys"),
             task_status_map=bundle.get("task_status_map"),
             task_notes_map=bundle.get("task_notes_map"),
@@ -118,7 +116,10 @@ def chat_with_ai_farm_agent(
         disease_scans=bundle["disease_scans"] if bundle else None,
         activity_history=bundle["activity_history"] if bundle else None,
         today_plan=today_plan,
-        ledger_transactions=bundle.get("ledger_transactions") if bundle else None
+        ledger_transactions=bundle.get("ledger_transactions") if bundle else None,
+        fertilizer_status=bundle.get("fertilizer_status") if bundle else None,
+        yield_prediction=bundle.get("yield_prediction") if bundle else None,
+        pump_status=bundle.get("pump_status") if bundle else None
     )
 
     # Record conversation history
@@ -190,8 +191,6 @@ def update_action_status(
         action_type = "fertilizer"
     elif "health" in status_in.action_id.lower() or "disease" in status_in.action_id.lower():
         action_type = "crop_health"
-    elif "satellite" in status_in.action_id.lower():
-        action_type = "satellite"
 
     if not record:
         record = FarmPlanTaskRecord(
@@ -245,7 +244,6 @@ def update_action_status(
         yield_prediction=bundle.get("yield_prediction"),
         activity_history=bundle["activity_history"],
         pump_status=bundle["pump_status"],
-        satellite_data=bundle.get("satellite_data"),
         completed_task_keys=bundle.get("completed_task_keys"),
         task_status_map=bundle.get("task_status_map"),
         task_notes_map=bundle.get("task_notes_map"),

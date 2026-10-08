@@ -152,7 +152,7 @@ export default function WeatherPage() {
     return (
       <div className="p-12 text-center text-[#8FA59B] text-xs flex flex-col items-center justify-center min-h-[50vh] space-y-3">
         <Loader2 className="w-8 h-8 text-[#10B981] animate-spin" />
-        <p className="font-semibold text-sm text-[#F3F7F5]">Syncing Satellite Telemetry Feeds...</p>
+        <p className="font-semibold text-sm text-[#F3F7F5]">Syncing Weather Telemetry Feeds...</p>
         <p className="text-[#8FA59B] text-xs">Acquiring Open-Meteo microclimate data for {activeFarm.name}</p>
       </div>
     );
@@ -208,7 +208,7 @@ export default function WeatherPage() {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/20 uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span> Live Satellite Feed
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span> Live Weather Radar Feed
             </span>
             <span className="text-[10px] font-medium text-[#8FA59B]">
               Open-Meteo High-Res Microclimate Engine

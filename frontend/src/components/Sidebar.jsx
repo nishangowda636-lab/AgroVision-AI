@@ -8,7 +8,6 @@ import {
   Cpu,
   CloudSun,
   Heart,
-  Satellite,
   Sparkles,
   BarChart3,
   Droplets,
@@ -45,7 +44,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         { name: 'IoT Sensors', path: '/sensors', icon: Cpu },
         { name: 'Weather', path: '/weather', icon: CloudSun },
         { name: 'Crop Health', path: '/crop-health', icon: Heart },
-        { name: 'Satellite Health', path: '/satellite', icon: Satellite },
       ]
     },
     {
@@ -120,7 +118,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                   (item.path === '/assistant' && (location.pathname === '/ai-farm-agent' || location.pathname === '/copilot')) ||
                   (item.path === '/irrigation' && location.pathname === '/smart-irrigation') ||
                   (item.path === '/crop-health' && location.pathname === '/disease-detection') ||
-                  (item.path === '/satellite' && location.pathname === '/field-health') ||
                   (item.path === '/sensors' && location.pathname === '/iot') ||
                   (item.path === '/government-schemes' && location.pathname === '/government-services') ||
                   (item.path === '/ledger' && location.pathname === '/profit');

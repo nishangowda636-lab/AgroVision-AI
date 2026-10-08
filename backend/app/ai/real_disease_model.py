@@ -17,6 +17,27 @@ import numpy as np
 import cv2
 from typing import Dict, Any, Optional, List, Tuple
 
+class _TorchFallback:
+    """Fallback stub for torch/torchvision modules to prevent NoneType attribute errors when torch is uninstalled."""
+    def __getattr__(self, name: str) -> Any:
+        return _TorchFallback()
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return _TorchFallback()
+
+    def __enter__(self) -> Any:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        pass
+
+    def __iter__(self) -> Any:
+        return iter([_TorchFallback()])
+
+    def __getitem__(self, item: Any) -> Any:
+        return _TorchFallback()
+
+
 try:
     import torch
     import torch.nn as nn
@@ -25,10 +46,10 @@ try:
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     HAS_TORCH = True
 except ImportError:
-    torch = None
-    nn = None
-    transforms = None
-    models = None
+    torch: Any = _TorchFallback()
+    nn: Any = _TorchFallback()
+    transforms: Any = _TorchFallback()
+    models: Any = _TorchFallback()
     DEVICE = "cpu"
     HAS_TORCH = False
 
@@ -635,6 +656,224 @@ AGRONOMIC_KNOWLEDGE_BASE: Dict[str, Dict[str, Any]] = {
         "monitoring_plan": "Scout central leaf whorls twice weekly.",
         "when_to_contact_expert": "No action needed. Vigorous vegetative growth.",
         "weather_consideration": "Apply nitrogen fertilizers only when soil is moist, preferably avoiding immediately before heavy torrential downpours."
+    },
+
+    # ☕ Coffee (Coffea arabica / canephora)
+    "Coffee___healthy": {
+        "crop": "Coffee",
+        "disease": "Healthy Coffee Foliage & Berry Clusters",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Plantation Crop",
+        "visible_symptoms": "Glossy, dark green, lanceolate leaves with prominent wavy margins; firm nodes and healthy developing green berry clusters without rust lesions or borer pinholes.",
+        "possible_causes": "Optimal two-tier canopy shade (40–50%), balanced organic mulching, and balanced soil fertility (pH 5.5–6.5).",
+        "recommended_next_steps": "1. Maintain filtered overhead silver oak / shade tree canopy.\n2. Apply pre-monsoon foliar nutrition (19:19:19 @ 4g/L + Zinc Sulphate @ 1g/L).\n3. Keep shade regulation branches trimmed before monsoon rains.",
+        "prevention": "Regulate shade, apply preventive 0.5% Bordeaux mixture before onset of South-West monsoon.",
+        "monitoring_plan": "Scout lower canopy leaves weekly for early orange rust pustules.",
+        "when_to_contact_expert": "No action needed. Healthy plantation crop.",
+        "weather_consideration": "Maintain adequate mulch during dry spells; ensure canopy air movement prior to heavy monsoon rains."
+    },
+    "Coffee___Rust": {
+        "crop": "Coffee",
+        "disease": "Coffee Leaf Rust (Hemileia vastatrix)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Characteristic powdery yellowish-orange pustules on lower leaf surfaces; corresponding pale chlorotic spots on upper leaf surfaces leading to premature defoliation and twig dieback.",
+        "possible_causes": "Hemileia vastatrix fungal spores spreading via rain splashes and wind in warm, humid microclimates (21–25°C, high RH).",
+        "recommended_next_steps": "1. Spray 0.5% neutral Bordeaux mixture (pre-monsoon & post-monsoon) or Oxycarboxin 20% EC (1 ml/L) / Hexaconazole 5% EC (2 ml/L).\n2. Prune heavily diseased criss-cross branches to improve sunlight penetration.\n3. Avoid excessive nitrogen fertilisation during active rust sporulation.",
+        "prevention": "Plant rust-tolerant selections (S.795, Chandragiri); regulate overhead shade to 40–50% to prevent prolonged leaf wetness.",
+        "monitoring_plan": "Examine underside of 20 random leaves per acre every 5 days during humid spells.",
+        "when_to_contact_expert": "If leaf defoliation exceeds 20% on bearing coffee branches.",
+        "weather_consideration": "Prolonged leaf moisture (>6 hours) triggers rust spore germination. Spray protective copper fungicide before heavy rains."
+    },
+    "Coffee___Berry_borer": {
+        "crop": "Coffee",
+        "disease": "Coffee Berry Borer Infestation (Hypothenemus hampei)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Pest Damage",
+        "visible_symptoms": "Distinct round pinholes (0.8–1 mm) in the navel/calyx disc of developing green or ripe coffee berries, with powdered berry dust and premature berry drop.",
+        "possible_causes": "Female Hypothenemus hampei beetle burrowing into berry beans during hard-bean development stage.",
+        "recommended_next_steps": "1. Install Brocap traps baited with ethanol-methanol mixture (1:1) @ 20 traps/hectare.\n2. Spray entomopathogenic fungus Beauveria bassiana (5g/L) during evening hours.\n3. Collect and destroy gleanings and left-over dropped berries from the field floor.",
+        "prevention": "Perform clean, stripped harvesting (zero gleanings); deploy pheromone/kairomone traps right after post-blossom shower.",
+        "monitoring_plan": "Check 100 green berries per plot weekly for navel boreholes.",
+        "when_to_contact_expert": "If berry pinhole incidence exceeds 5% in commercial bearing blocks.",
+        "weather_consideration": "Beetle flight and infestation surge immediately following pre-monsoon blossom showers."
+    },
+    "Coffee___Black_rot": {
+        "crop": "Coffee",
+        "disease": "Black Rot / Koleroga (Pellicularia koleroga)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Leaves turn black, rot, and remain suspended from branches by delicate fungal mycelial threads; rotting of green berry clusters and dark water-soaked patches on twigs.",
+        "possible_causes": "Heavy mist, dense shade, and continuous monsoon downpours creating near 100% relative humidity in coffee estates.",
+        "recommended_next_steps": "1. Remove and burn hanging blackened leaves and mycelial webs.\n2. Prune shade canopy to allow sunshine into dense pockets.\n3. Spray 1.0% Bordeaux mixture or Carbendazim 50% WP (1g/L) targeted at the inner foliage.",
+        "prevention": "Thin shade trees before June; avoid stagnant pockets of moist cold air in valley floor blocks.",
+        "monitoring_plan": "Inspect shaded valley blocks daily during torrential monsoon breaks.",
+        "when_to_contact_expert": "If berry rotting spreads to primary lateral branches.",
+        "weather_consideration": "Continuous cloudy, drizzly weather accelerates Pellicularia koleroga mycelial growth."
+    },
+    "Coffee___Cercospora_leaf_spot": {
+        "crop": "Coffee",
+        "disease": "Brown Eye Spot / Berry Blotch (Cercospora coffeicola)",
+        "health_status": "Possible Issue",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Circular brown leaf spots with distinct ash-gray necrotic centers surrounded by bright yellow halos (brown eye effect); dark sunken spots on sun-exposed green berries.",
+        "possible_causes": "Inadequate overhead shade (excessive sun scorch), poor soil nitrogen, and plant stress in nursery and young clearings.",
+        "recommended_next_steps": "1. Increase temporary shade with fast-growing green manure plants.\n2. Apply foliar spray of Mancozeb 75% WP (2.5 g/L) or Copper Oxychloride 50% WP (2.5 g/L).\n3. Apply balanced urea top-dressing to relieve nutrient stress.",
+        "prevention": "Ensure nursery and young plants have 50% shade; maintain adequate organic matter around root zone.",
+        "monitoring_plan": "Check upper exposed foliage of young plants weekly.",
+        "when_to_contact_expert": "If nursery seedlings show more than 25% leaf drop.",
+        "weather_consideration": "Strong unshaded sunlight following brief showers promotes Cercospora lesion expansion."
+    },
+
+    # 🌿 Black Pepper (Piper nigrum)
+    "Pepper___healthy": {
+        "crop": "Black Pepper",
+        "disease": "Healthy Black Pepper Foliage & Spikes",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Spice Crop",
+        "visible_symptoms": "Lustrous, leathery, dark green cordate leaves on vigorous vines trailing up support standards; full, compact flowering/fruiting spikes without wilt or shot holes.",
+        "possible_causes": "Good vine aeration, well-drained loamy soil, balanced organic mulching, and healthy living support standards.",
+        "recommended_next_steps": "1. Maintain ring basin weeding around standard base.\n2. Apply bio-control agent Trichoderma harzianum @ 50g/vine mixed with well-rotted farmyard manure.\n3. Ensure base drainage channels are unobstructed before monsoon.",
+        "prevention": "Plant disease-free runner cuttings; apply Trichoderma and neem cake annually around root collar.",
+        "monitoring_plan": "Inspect root collar and lower runner shoots weekly for discoloration.",
+        "when_to_contact_expert": "No action needed. Vigorous vine growth.",
+        "weather_consideration": "Construct trenches between vine rows before high-rainfall monsoon storms to avoid collar waterlogging."
+    },
+    "Pepper___Quick_wilt": {
+        "crop": "Black Pepper",
+        "disease": "Quick Wilt / Foot Rot (Phytophthora capsici)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Oomycete Pathogen",
+        "visible_symptoms": "Sudden, catastrophic wilting and yellowing of the entire vine; dark, slimy water-soaked lesions at the collar (foot rot), foliar blights with fimbriate margins, and rapid defoliation.",
+        "possible_causes": "Soil-borne Phytophthora capsici zoospores propelled by splashing rain drops and waterlogged root zones during South-West monsoon.",
+        "recommended_next_steps": "1. Uproot and burn severely decayed vines; drench planting pit with Copper Oxychloride (3 g/L).\n2. Drench root zone and spray foliage of surrounding vines with Potassium Phosphonate (3 ml/L) or Metalaxyl-Mancozeb (2 g/L).\n3. Clear inter-row drainage channels immediately.",
+        "prevention": "Apply Trichoderma enriched neem cake (2 kg/vine) in May–June; prune low hanging runner shoots within 30cm of soil.",
+        "monitoring_plan": "Scout root collar of all pepper vines every 3 days during the monsoon season.",
+        "when_to_contact_expert": "Immediate action required — Quick Wilt can destroy an entire pepper garden within 10 to 14 days.",
+        "weather_consideration": "Torrential monsoon rains and poor subsoil drainage create ideal conditions for zoospore propagation."
+    },
+    "Pepper___Pollu_beetle": {
+        "crop": "Black Pepper",
+        "disease": "Pollu Beetle Infestation (Longitarsus nigripennis)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Pest Damage",
+        "visible_symptoms": "Characteristic shot holes in tender leaves; infested green berries turn dark brown, hollow out, and dry up prematurely (hollow pollu berries).",
+        "possible_causes": "Grubs of Longitarsus nigripennis beetle boring into tender berries and adult beetles feeding on tender young leaves.",
+        "recommended_next_steps": "1. Spray Quinalphos 25% EC (2 ml/L) or Neem seed kernel extract (NSKE 5%) during berry formation (July and October).\n2. Regulate shade on support trees to allow adequate sunlight into the canopy.\n3. Rake soil basin to expose pupae to natural predators.",
+        "prevention": "Regulate overhead shade on standard trees; apply neem cake in vine basins to disrupt soil pupation.",
+        "monitoring_plan": "Scout 20 pepper spikes per vine for dark puncture marks during berry development.",
+        "when_to_contact_expert": "If berry hollow percentage exceeds 10% in developing spikes.",
+        "weather_consideration": "Adult beetle emergence peaks in July–August during post-blossom berry expansion."
+    },
+    "Pepper___Anthracnose": {
+        "crop": "Black Pepper",
+        "disease": "Anthracnose / Fungal Spike Shedding (Colletotrichum gloeosporioides)",
+        "health_status": "Possible Issue",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Circular to irregular brownish necrotic spots with yellow halos on leaves; brownish lesions on spike stalk causing premature spike drying and shedding.",
+        "possible_causes": "Colletotrichum fungal spores spreading under high humidity and shaded, poorly ventilated canopy conditions.",
+        "recommended_next_steps": "1. Spray 1.0% Bordeaux mixture or Carbendazim + Mancozeb (2 g/L) covering spikes and lower foliage.\n2. Prune excess shade on support trees to ensure good air circulation around the vines.\n3. Collect and remove dropped infected spikes.",
+        "prevention": "Maintain open vine canopy with 40% shade regulation; apply protective copper spray before flowering.",
+        "monitoring_plan": "Inspect spikes fortnightly for basal stalk necrosis.",
+        "when_to_contact_expert": "If spike shedding exceeds 15% during early fruit setting.",
+        "weather_consideration": "Intermittent drizzle followed by warm humid periods favors fungal spike infection."
+    },
+
+    # 🌿 Cardamom (Elettaria cardamomum)
+    "Cardamom___healthy": {
+        "crop": "Cardamom",
+        "disease": "Healthy Cardamom Foliage & Tillers",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Spice Crop",
+        "visible_symptoms": "Vibrant deep green lanceolate leaves on robust pseudostem clumps; clean panicles emerging from tiller base with plump, aromatic green capsules.",
+        "possible_causes": "High organic matter forest loam, continuous mist/filtered shade (50–60%), and consistent soil moisture without waterlogging.",
+        "recommended_next_steps": "1. Maintain shade tree canopy regulation.\n2. Apply neem cake (1 kg/clump) enriched with Trichoderma.\n3. Mulch root zone with dry jungle leaves before dry summer months.",
+        "prevention": "Plant virus-free tissue-cultured clones or certified rhizome splits; practice clean weeding.",
+        "monitoring_plan": "Scout base of clumps weekly for clean panicle emergence.",
+        "when_to_contact_expert": "No action needed. Prime commercial health.",
+        "weather_consideration": "Ensure mist sprinklers maintain 70–80% RH during dry spells."
+    },
+    "Cardamom___Katte_disease": {
+        "crop": "Cardamom",
+        "disease": "Cardamom Mosaic / Katte Virus (Cardamom mosaic virus)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Viral Pathogen",
+        "visible_symptoms": "Characteristic discontinuous pale green to yellow stripes along veins of young leaves; mottled appearance, tiller stunting, and barren, slender panicles.",
+        "possible_causes": "Viral transmission by banana aphid (Pentalonia nigronervosa f. caladii) moving between infected clumps.",
+        "recommended_next_steps": "1. Strictly rogue (uproot) and burn all infected clumps immediately.\n2. Spray Dimethoate 30% EC (2 ml/L) or Imidacloprid 17.8% SL (0.5 ml/L) on adjacent clumps to control aphid vectors.\n3. Replant gap only after 3 months with certified virus-free suckers.",
+        "prevention": "Use virus-free planting material; regular aphid monitoring and roguing of early infected clumps.",
+        "monitoring_plan": "Scout new flush leaves weekly across the entire plantation.",
+        "when_to_contact_expert": "Immediate notification advised — roguing is essential to prevent estate-wide epidemic.",
+        "weather_consideration": "Aphid activity peaks during warm dry interludes in the plantation."
+    },
+    "Cardamom___Capsule_rot": {
+        "crop": "Cardamom",
+        "disease": "Azhukal / Capsule Rot (Phytophthora meadii)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Oomycete Pathogen",
+        "visible_symptoms": "Water-soaked lesions on young developing capsules turning dull greenish-brown, rotting, and dropping; rotting of panicles and pseudostem bases.",
+        "possible_causes": "Phytophthora spores thriving under continuous heavy monsoon rainfall, dense overhead shade, and water accumulation around clump bases.",
+        "recommended_next_steps": "1. Remove and destroy rotten capsules and diseased panicles.\n2. Spray 1.0% Bordeaux mixture or Potassium Phosphonate (3 ml/L) covering panicles and clumps.\n3. Drench clump basin with Copper Oxychloride (3 g/L) or Fosetyl-Al (2 g/L).",
+        "prevention": "Thin excess shade trees before monsoon; clear leaf mulch from over panicles during continuous rains.",
+        "monitoring_plan": "Inspect panicle beds every 4 days during active monsoon downpours.",
+        "when_to_contact_expert": "If capsule drop exceeds 15% in commercial panicles.",
+        "weather_consideration": "Clear accumulated heavy debris around panicles to allow aeration during wet spells."
+    },
+
+    # 🌴 Arecanut (Areca catechu)
+    "Arecanut___healthy": {
+        "crop": "Arecanut",
+        "disease": "Healthy Arecanut Crown & Nut Bunches",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Plantation Crop",
+        "visible_symptoms": "Deep emerald green pinnate fronds forming a compact upright crown; sturdy trunk and heavily set bunches of lustrous green nuts.",
+        "possible_causes": "Adequate soil drainage, balanced NPK fertigation, and regular prophylactic copper sprays before monsoon.",
+        "recommended_next_steps": "1. Apply organic manure (12 kg/palm) along with balanced NPK (100:40:140 g/palm/year).\n2. Ensure inter-drainage channels are clear.\n3. Fasten polythene covers over nut bunches before heavy monsoon (Koleroga prevention).",
+        "prevention": "Spray 1.0% Bordeaux mixture on bunches twice before South-West monsoon.",
+        "monitoring_plan": "Check crown fronds and developing nut bunches fortnightly.",
+        "when_to_contact_expert": "No action needed. Healthy palm.",
+        "weather_consideration": "Ensure drainage ditches carry monsoon runoff away from palm root basins."
+    },
+    "Arecanut___Koleroga": {
+        "crop": "Arecanut",
+        "disease": "Fruit Rot / Koleroga / Mahali (Phytophthora heveae / meadii)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Oomycete Pathogen",
+        "visible_symptoms": "Water-soaked dark lesions near calyx of developing green nuts; extensive premature dropping of rotting green nuts, white felt-like fungal growth on dropped nuts.",
+        "possible_causes": "Heavy, incessant monsoon rainfall with low temperatures and high humidity (>95% RH) enabling Phytophthora spores to attack bunches.",
+        "recommended_next_steps": "1. Tie polythene bags over nut bunches as physical protective barrier.\n2. Spray 1.0% Bordeaux mixture with rosin soap adhesive on crown and bunches immediately during rain breaks.\n3. Collect and burn all dropped rotten nuts on the plantation floor.",
+        "prevention": "Prophylactic 1% Bordeaux spray in May–June before monsoon onset; repeat 40 days later.",
+        "monitoring_plan": "Daily inspection of orchard floor for prematurely fallen green nuts.",
+        "when_to_contact_expert": "If nut drop exceeds 5% of developing bunch count.",
+        "weather_consideration": "Continuous high-intensity downpours accelerate Phytophthora zoospore splash onto bunches."
+    },
+    "Arecanut___Yellow_leaf_disease": {
+        "crop": "Arecanut",
+        "disease": "Yellow Leaf Disease (Phytoplasma)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Phytoplasma Pathogen",
+        "visible_symptoms": "Characteristic yellowing of leaflets in outer and middle whorls of the crown; tips of leaflets turn brown and dry; crown becomes stunted and nuts turn black and shriveled with spongy kernels.",
+        "possible_causes": "Phytoplasma transmitted by plant hoppers (Proutista moesta) in poorly drained soils with micronutrient imbalances.",
+        "recommended_next_steps": "1. Improve plantation drainage and apply dolomite/lime (1 kg/palm) to correct soil acidity.\n2. Apply additional potassium (150g K2O/palm) and zinc/magnesium micronutrients.\n3. Spray organic neem oil formulations to suppress vector populations.",
+        "prevention": "Maintain soil health with regular organic compost and green manuring; avoid water stagnation.",
+        "monitoring_plan": "Monitor lower fronds for progressive golden-yellow discoloration.",
+        "when_to_contact_expert": "Consult plantation research station (CPCRI) for certified root rejuvenation protocol.",
+        "weather_consideration": "Symptoms aggravate during prolonged waterlogging and post-monsoon drought."
     }
 }
 
@@ -653,7 +892,14 @@ CROP_TO_DISEASE_PREFIX = {
     "Soybean": "Soybean___",
     "Squash": "Squash___",
     "Strawberry": "Strawberry___",
-    "Tomato": "Tomato___"
+    "Tomato": "Tomato___",
+    # Plantation & Spices Crops
+    "Coffee": "Coffee___",
+    "Black Pepper": "Pepper___",
+    "Cardamom": "Cardamom___",
+    "Arecanut": "Arecanut___",
+    "Ginger": "Ginger___",
+    "Turmeric": "Turmeric___"
 }
 
 # Supported crop display names

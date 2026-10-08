@@ -48,7 +48,14 @@ const POPULAR_CROPS = [
   'Sesamum',
   'Tobacco',
   'Coffee',
-  'Tea'
+  'Black Pepper',
+  'Cardamom',
+  'Arecanut',
+  'Tea',
+  'Coconut',
+  'Rubber',
+  'Ginger',
+  'Turmeric'
 ];
 
 export default function YieldPrediction() {

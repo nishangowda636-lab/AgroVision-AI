@@ -36,15 +36,21 @@ export default function Navbar({ toggleMobileSidebar }) {
 
   const [syncStatus, setSyncStatus] = useState(typeof navigator !== 'undefined' && navigator.onLine ? 'ONLINE' : 'OFFLINE');
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   // Derive dynamic page title and subtitle from current path
   const getPageInfo = () => {
     const p = location.pathname;
-    if (p.includes('dashboard')) return { title: 'Dashboard', sub: `Good morning, ${user?.full_name?.split(' ')[0] || 'Farmer'}` };
+    if (p.includes('dashboard')) return { title: 'Dashboard', sub: `${getGreeting()}, ${user?.full_name?.split(' ')[0] || 'Farmer'}` };
     if (p.includes('farm-setup')) return { title: 'Farm Setup', sub: 'Field boundaries, soil profile & geometry' };
     if (p.includes('sensors') || p.includes('iot')) return { title: 'IoT Sensors', sub: 'Live field moisture & ambient telemetry' };
     if (p.includes('weather')) return { title: 'Weather Intelligence', sub: 'Microclimate radar & operational impact' };
     if (p.includes('crop-health') || p.includes('disease')) return { title: 'AI Crop Analyzer', sub: 'Computer vision pathology & foliar diagnostics' };
-    if (p.includes('satellite') || p.includes('field-health')) return { title: 'Satellite Health', sub: 'Sentinel-2 multispectral canopy vigor' };
     if (p.includes('crop-recommendation')) return { title: 'Crop Recommendation', sub: 'AI crop viability & seasonal suitability' };
     if (p.includes('yield-prediction')) return { title: 'Yield Prediction', sub: 'Regression harvest forecast & production range' };
     if (p.includes('irrigation')) return { title: 'Smart Irrigation', sub: 'Decision-first water schedule & borewell control' };
@@ -239,8 +245,23 @@ export default function Navbar({ toggleMobileSidebar }) {
                     {notifications.map((n) => (
                       <div
                         key={n.id}
-                        className={`p-2 rounded-lg text-xs ${
-                          n.is_read ? 'bg-[#08120E] text-[#8FA59B]' : 'bg-[#13271F] text-[#F3F7F5] border border-[#1B382D]'
+                        onClick={async () => {
+                          if (!n.is_read) {
+                            try {
+                              await api.put(`/notifications/${n.id}/read`);
+                            } catch (e) {}
+                            setNotifications((prev) =>
+                              prev.map((item) => (item.id === n.id ? { ...item, is_read: true } : item))
+                            );
+                            setNotifCount((prev) => Math.max(0, prev - 1));
+                          }
+                          setShowNotifDropdown(false);
+                          navigate(n.action_link || '/notifications');
+                        }}
+                        className={`p-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                          n.is_read
+                            ? 'bg-[#08120E] text-[#8FA59B] hover:bg-[#0E1E18]'
+                            : 'bg-[#13271F] text-[#F3F7F5] border border-[#1B382D] hover:border-[#10B981]/50'
                         }`}
                       >
                         <p className="font-semibold text-[#10B981] text-[11px]">{n.title || 'Farm Alert'}</p>

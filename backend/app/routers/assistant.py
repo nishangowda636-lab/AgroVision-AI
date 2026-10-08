@@ -45,7 +45,11 @@ def chat_with_agrovision_ai(
         sensor_data=bundle["sensor_data"] if bundle else None,
         disease_scans=bundle["disease_scans"] if bundle else None,
         activity_history=bundle["activity_history"] if bundle else None,
-        today_plan=today_plan
+        today_plan=today_plan,
+        ledger_transactions=bundle.get("ledger_transactions") if bundle else None,
+        fertilizer_status=bundle.get("fertilizer_status") if bundle else None,
+        yield_prediction=bundle.get("yield_prediction") if bundle else None,
+        pump_status=bundle.get("pump_status") if bundle else None
     )
 
     # Record conversation history

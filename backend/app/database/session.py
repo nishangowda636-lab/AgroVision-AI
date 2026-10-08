@@ -11,17 +11,16 @@ BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 DEFAULT_DB_PATH = os.path.join(BACKEND_DIR, "agrovision.db").replace("\\", "/")
 
 raw_db_url = os.getenv("DATABASE_URL")
-uses_default_db = not raw_db_url or raw_db_url.strip() in (
+if raw_db_url and raw_db_url.strip() not in (
     "sqlite:///./agrovision.db",
     "sqlite:///agrovision.db",
-)
-if uses_default_db and os.getenv("VERCEL"):
+):
+    DATABASE_URL: str = raw_db_url.strip()
+elif os.getenv("VERCEL"):
     temp_db_path = os.path.join(tempfile.gettempdir(), "agrovision.db").replace("\\", "/")
     DATABASE_URL = f"sqlite:///{temp_db_path}"
-elif uses_default_db:
-    DATABASE_URL = f"sqlite:///{DEFAULT_DB_PATH}"
 else:
-    DATABASE_URL = raw_db_url
+    DATABASE_URL = f"sqlite:///{DEFAULT_DB_PATH}"
 
 # Handle SQLite vs PostgreSQL configuration
 if DATABASE_URL.startswith("sqlite"):
@@ -119,7 +118,15 @@ def run_auto_migrations():
         ("marketplace_products", "source_verified", "BOOLEAN DEFAULT 0"),
         ("marketplace_products", "product_verified", "BOOLEAN DEFAULT 0"),
         ("marketplace_products", "image_verified", "BOOLEAN DEFAULT 0"),
-        ("marketplace_products", "url_verified", "BOOLEAN DEFAULT 0")
+        ("marketplace_products", "url_verified", "BOOLEAN DEFAULT 0"),
+        ("marketplace_products", "amazon_url", "TEXT"),
+        ("marketplace_products", "flipkart_url", "TEXT"),
+        ("marketplace_products", "estimated_price", "TEXT"),
+        ("marketplace_products", "rating", "REAL DEFAULT 4.6"),
+        ("marketplace_products", "key_benefits", "TEXT"),
+        ("marketplace_products", "pack_size", "TEXT"),
+        ("marketplace_products", "redirect_platform", "TEXT DEFAULT 'Official Website'"),
+        ("marketplace_products", "redirect_button_text", "TEXT DEFAULT 'Buy on Official Website'")
     ]
 
     with engine.connect() as conn:

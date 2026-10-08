@@ -194,11 +194,17 @@ class DiseaseDetectionOut(BaseModel):
     model_status: Optional[str] = "Online"
     needs_field_verification: Optional[bool] = False
     farmer_guidance: Optional[str] = None
+    crop_verified: Optional[bool] = False
+    suggested_crops: Optional[List[str]] = None
     top_predictions: Optional[List[Dict[str, Any]]] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class VerifyCropRequest(BaseModel):
+    scan_id: int
+    verified_crop: str
 
 # Fertilizer Application Schemas
 class FertilizerApplicationCreate(BaseModel):
@@ -741,103 +747,6 @@ class LedgerSyncRequest(BaseModel):
     transactions: List[LedgerSyncItem]
 
 
-# 🛰️ SATELLITE FIELD HEALTH & REMOTE SENSING SCHEMAS
-class SatelliteZoneOut(BaseModel):
-    zone_id: str
-    name: str # e.g. "North-East Quadrant", "Central Field Zone"
-    bounds: List[List[float]] # [[lat1, lon1], [lat2, lon2], ...]
-    mean_ndvi: float
-    mean_ndmi: Optional[float] = 0.45
-    health_status: str # Healthy, Moderate Stress, High Stress
-    stress_category: Optional[str] = "Optimal Canopy"
-    area_acres: float
-    stress_cause_hypothesis: Optional[str] = None
-    recommended_action: str
-
-class SatelliteWhatChangedOut(BaseModel):
-    previous_date: str
-    previous_ndvi: float
-    current_date: str
-    current_ndvi: float
-    ndvi_change_pct: float
-    trend: str # IMPROVING, DECLINING, STABLE
-    affected_area_acres: float
-    summary: str
-    possible_reasons: List[str]
-    recommended_action: str
-
-class SatelliteCrossAnalysisOut(BaseModel):
-    soil_moisture_pct: Optional[float] = None
-    sensor_status: str # Online, Offline, Simulated
-    rain_prob_next_24h: float
-    rain_expected: bool
-    satellite_health: str
-    crop_stage: str
-    diagnosis_type: str # WATER_STRESS, BIOLOGICAL_OR_NUTRIENT_STRESS, WEATHER_RISK, OPTIMAL_GROWTH, INSUFFICIENT_DATA
-    headline: str
-    detailed_explanation: str
-    action_steps: List[str]
-    requires_ground_scouting: bool = True
-
-class SatelliteFieldHealthOut(BaseModel):
-    farm_id: int
-    farm_name: str
-    crop: str
-    crop_stage: str
-    latitude: float
-    longitude: float
-    size_acres: float
-    observation_date: str
-    capture_date: Optional[str] = None # Alias for observation_date
-    satellite_provider: str
-    resolution_meters: float
-    cloud_cover_pct: float
-    cloud_coverage: Optional[float] = None # Alias for cloud_cover_pct
-    is_cloud_covered: bool = False
-    mean_ndvi: float
-    ndvi: Optional[float] = None # Alias for mean_ndvi
-    mean_ndmi: Optional[float] = 0.48
-    moisture_index: Optional[float] = 0.48
-    health_status: str # Healthy, Moderate Stress, High Stress
-    affected_area_acres: float
-    boundary_geojson: Optional[Dict[str, Any]] = None
-    boundary: Optional[Dict[str, Any]] = None # Alias for boundary_geojson
-    zones: List[SatelliteZoneOut]
-    stress_zones: Optional[List[SatelliteZoneOut]] = None # Alias for zones
-    what_changed: SatelliteWhatChangedOut
-    historical_comparison: Optional[Dict[str, Any]] = None
-    historical_timeline: Optional[List[Dict[str, Any]]] = []
-    cross_analysis: SatelliteCrossAnalysisOut
-    recommendations: Optional[List[str]] = []
-    data_source: Optional[str] = "Sentinel-2 L2A / Copernicus Earth Observation"
-    imagery_url: Optional[str] = None
-    raw_image_url: Optional[str] = None
-    screening_disclaimer: Optional[str] = "Satellite vegetation (NDVI) and moisture (NDMI) indices are optical screening signals. Physical field scouting or leaf photo scanning via AgroVision Crop Health AI is recommended before chemical treatments."
-
-class SatelliteObservationOut(BaseModel):
-    id: int
-    farm_id: int
-    observation_date: str
-    satellite_provider: str
-    resolution_meters: float
-    cloud_cover_pct: float
-    mean_ndvi: float
-    mean_ndmi: Optional[float] = 0.48
-    previous_ndvi: Optional[float] = None
-    ndvi_change_pct: float
-    health_status: str
-    affected_area_acres: float
-    what_changed_summary: Optional[str] = None
-    recommended_action: Optional[str] = None
-    iot_cross_analysis: Optional[str] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class FieldBoundaryUpdateIn(BaseModel):
-    boundary_geojson: Dict[str, Any]
-
 # ⚙️ IoT AUTOMATION SCHEMAS
 class IoTAutomationStatusOut(BaseModel):
     farm_id: int
@@ -969,6 +878,7 @@ class FertilizerRecommendationResponse(BaseModel):
     next_safe_window: Optional[str] = None
     weather_source: Optional[str] = "Open-Meteo Real-Time Meteorological API"
     dosage_items: List[FertilizerDosageItem]
+    application_warnings: Optional[List[str]] = []
     model_used: str = "Gradient Boosting Classifier"
     model_accuracy: float = 0.9675
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -1076,7 +986,7 @@ class AIFarmAgentActionItem(BaseModel):
     id: str
     priority: str # HIGH, MEDIUM, LOW
     priority_rank: int = 1
-    action_type: str = "general" # weather, irrigation, fertilizer, crop_health, satellite, crop_stage, scouting
+    action_type: str = "general" # weather, irrigation, fertilizer, crop_health, crop_stage, scouting
     action: str
     title: str
     reason: str
@@ -1148,6 +1058,14 @@ class MarketplaceProductOut(BaseModel):
     image_url: Optional[str] = None
     official_product_url: Optional[str] = None
     official_brand_url: Optional[str] = None
+    amazon_url: Optional[str] = None
+    flipkart_url: Optional[str] = None
+    estimated_price: Optional[str] = None
+    rating: Optional[float] = 4.6
+    key_benefits: Optional[str] = None
+    pack_size: Optional[str] = None
+    redirect_platform: Optional[str] = "Official Website"
+    redirect_button_text: Optional[str] = "Buy on Official Website"
     source_name: str
     source_type: Optional[str] = "manufacturer"
     source_verified: bool = False
