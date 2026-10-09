@@ -174,9 +174,12 @@ async def analyze_crop_health(
     setattr(record, "warnings", analysis.get("warnings", []))
     setattr(record, "analysis_method", analysis.get("analysis_method", "Two-Stage PyTorch ML"))
     setattr(record, "model_status", analysis.get("model_status", "Online"))
-    setattr(record, "needs_field_verification", analysis.get("needs_field_verification", False))
+    setattr(record, "needs_field_verification", analysis.get("needs_field_verification", res_status != "VALID_RESULT"))
     setattr(record, "crop_verified", analysis.get("crop_verified", False))
-    setattr(record, "suggested_crops", analysis.get("suggested_crops", ["Potato", "Grape", "Tomato", "Corn / Maize", "Ginger", "Carrot"]))
+    setattr(record, "suggested_crops", analysis.get("suggested_crops", [
+        "Rice (Paddy)", "Wheat", "Cotton", "Sugarcane", "Banana",
+        "Chilli", "Onion", "Potato", "Tomato", "Coffee", "Mango", "Arecanut"
+    ]))
     setattr(record, "farmer_guidance", analysis.get("farmer_guidance", "Inspect crop field regularly."))
     setattr(record, "top_predictions", analysis.get("top_predictions", []))
     setattr(record, "is_unclear", analysis.get("is_unclear", False))
@@ -239,7 +242,7 @@ def verify_crop_diagnosis(
         image_path=full_path if os.path.exists(full_path) else os.path.join(UPLOAD_DIR, saved_filename),
         plant_part=record.plant_part,
         weather_data=weather_data,
-        farm_crop=farm.crop if farm else req.verified_crop,
+        farm_crop=req.verified_crop or (farm.crop if farm else None),
         verified_crop=req.verified_crop
     )
 
@@ -266,39 +269,45 @@ def verify_crop_diagnosis(
     db.commit()
     db.refresh(record)
 
+    crop_conf = re_analysis.get("crop_confidence")
+    disease_conf = re_analysis.get("disease_confidence")
+    ident_conf = re_analysis.get("identification_confidence", crop_conf)
+    cond_conf = re_analysis.get("condition_confidence", disease_conf)
+    is_crop_verified = bool(re_analysis.get("crop_verified", False))
+
     setattr(record, "status", res_status)
     setattr(record, "analysis_status", res_status)
     setattr(record, "reason", re_analysis.get("reason"))
-    setattr(record, "identified_crop", record.detected_crop)
-    setattr(record, "crop_confidence", re_analysis.get("crop_confidence", 95.0))
+    setattr(record, "identified_crop", re_analysis.get("identified_crop", record.detected_crop))
+    setattr(record, "crop_confidence", crop_conf)
     setattr(record, "companion_crop", re_analysis.get("companion_crop"))
     setattr(record, "companion_observations", re_analysis.get("companion_observations"))
     setattr(record, "plant_part", res_plant_part)
     setattr(record, "image_type", res_plant_part)
     setattr(record, "disease", record.detected_problem)
-    setattr(record, "disease_confidence", re_analysis.get("disease_confidence", 92.0))
+    setattr(record, "disease_confidence", disease_conf)
     setattr(record, "severity", record.severity)
     setattr(record, "recommendation", re_analysis.get("recommendation", record.next_steps))
-    setattr(record, "message", f"Crop successfully verified as {req.verified_crop}.")
+    setattr(record, "message", re_analysis.get("message") or (f"Crop verified as {req.verified_crop}." if is_crop_verified else f"Crop '{req.verified_crop}' could not be confirmed from image features."))
     setattr(record, "health_status", record.health_status)
     setattr(record, "crop_name", record.detected_crop)
     setattr(record, "disease_name", record.detected_problem)
     setattr(record, "condition", record.detected_problem)
-    setattr(record, "confidence", db_conf)
-    setattr(record, "identification_confidence", re_analysis.get("identification_confidence", 95.0))
-    setattr(record, "condition_confidence", re_analysis.get("condition_confidence", 92.0))
+    setattr(record, "confidence", res_conf)
+    setattr(record, "identification_confidence", ident_conf)
+    setattr(record, "condition_confidence", cond_conf)
     setattr(record, "visual_observations", re_analysis.get("visual_observations", [record.visible_symptoms]))
     setattr(record, "recommended_actions", re_analysis.get("recommended_actions", [record.next_steps]))
     setattr(record, "recommended_next_steps", re_analysis.get("recommended_next_steps", record.next_steps))
     setattr(record, "warnings", re_analysis.get("warnings", []))
-    setattr(record, "analysis_method", re_analysis.get("analysis_method", "Agronomic Computer Vision"))
-    setattr(record, "model_status", "Online")
-    setattr(record, "needs_field_verification", False)
-    setattr(record, "crop_verified", True)
-    setattr(record, "suggested_crops", [])
-    setattr(record, "farmer_guidance", re_analysis.get("farmer_guidance", "Produce verified."))
+    setattr(record, "analysis_method", re_analysis.get("analysis_method", "Model Inference"))
+    setattr(record, "model_status", re_analysis.get("model_status", "Online"))
+    setattr(record, "needs_field_verification", re_analysis.get("needs_field_verification", not is_crop_verified))
+    setattr(record, "crop_verified", is_crop_verified)
+    setattr(record, "suggested_crops", re_analysis.get("suggested_crops", []))
+    setattr(record, "farmer_guidance", re_analysis.get("farmer_guidance", "Follow recommended agronomic guidance."))
     setattr(record, "top_predictions", re_analysis.get("top_predictions", []))
-    setattr(record, "is_unclear", False)
+    setattr(record, "is_unclear", re_analysis.get("is_unclear", False))
     setattr(record, "monitoring_plan", re_analysis.get("monitoring_plan", "Scout crop regularly."))
 
     return record

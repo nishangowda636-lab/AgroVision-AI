@@ -18,12 +18,9 @@ import {
   X,
   Layers,
   CloudRain,
-  Volume2,
-  VolumeX,
   BadgeCheck
 } from 'lucide-react';
 import api from '../services/api';
-import { speakAgentText, stopAgentSpeech } from '../utils/agentVoiceService';
 
 const PLANT_PARTS = [
   { label: 'Auto Detect', val: 'Auto', icon: '✨' },
@@ -57,13 +54,13 @@ export default function CropHealthPage() {
   const [activePart, setActivePart] = useState('Auto');
   const [analyzing, setAnalyzing] = useState(false);
   const [verifyingCrop, setVerifyingCrop] = useState(false);
-  const [speakingLang, setSpeakingLang] = useState(null);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'history'
   const [analysisStep, setAnalysisStep] = useState(1);
   const [modelStatus, setModelStatus] = useState(null);
   const [showModelDetails, setShowModelDetails] = useState(false);
+  const [customCropInput, setCustomCropInput] = useState('');
 
   useEffect(() => {
     fetchHistory();
@@ -163,34 +160,6 @@ export default function CropHealthPage() {
     } finally {
       setVerifyingCrop(false);
     }
-  };
-
-  const handleSpeakDiagnosis = (lang = 'en') => {
-    if (speakingLang === lang) {
-      stopAgentSpeech();
-      setSpeakingLang(null);
-      return;
-    }
-    stopAgentSpeech();
-    setSpeakingLang(lang);
-
-    const cName = result?.crop_name || result?.detected_crop || 'Crop';
-    const pName = result?.condition || result?.disease || result?.detected_problem || 'Normal condition';
-    const recText = result?.recommendation || result?.next_steps || '';
-
-    let textToSpeak = '';
-    if (lang === 'kn') {
-      textToSpeak = `ಬೆಳೆ: ${cName}. ಸ್ಥಿತಿ: ${pName}. ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ: ${recText.slice(0, 200)}`;
-    } else if (lang === 'hi') {
-      textToSpeak = `फसल: ${cName}. स्थिति: ${pName}. अनुशंसित कार्रवाई: ${recText.slice(0, 200)}`;
-    } else {
-      textToSpeak = `Identified crop: ${cName}. Condition: ${pName}. Recommended action: ${recText.slice(0, 200)}`;
-    }
-
-    speakAgentText(textToSpeak, {
-      lang,
-      onEnd: () => setSpeakingLang(null)
-    });
   };
 
   return (
@@ -432,22 +401,41 @@ export default function CropHealthPage() {
           <div className="lg:col-span-7">
             {result ? (
               (() => {
-                const isNotSupported = result.analysis_status === 'NOT_SUPPORTED';
-                const isLowConfidence = result.analysis_status === 'LOW_CONFIDENCE' || (result.identified_crop === 'Unknown' && !isNotSupported);
-                const displayPart = result.plant_part || result.image_type || activePart || 'Leaf';
-                const cropName = (isLowConfidence || isNotSupported) ? 'Unknown' : (result.identified_crop || result.crop_name || result.detected_crop || 'Unknown');
-                const diseaseName = isNotSupported
-                  ? (result.disease || `Not Supported for ${displayPart}`)
-                  : isLowConfidence 
-                    ? (result.message || 'Crop could not be identified reliably') 
-                    : (result.disease || result.disease_name || result.detected_problem || 'Healthy Foliage');
-                const primaryConf = (isLowConfidence || isNotSupported)
-                  ? (result.crop_confidence !== undefined && result.crop_confidence !== null ? result.crop_confidence : (result.confidence || 0))
-                  : (result.disease_confidence !== undefined && result.disease_confidence !== null ? result.disease_confidence : (result.confidence || 0));
+                const status = result.status || result.analysis_status || 'VALID_RESULT';
+                const isConfirmed = status === 'VALID_RESULT';
+                const isLowConfidence = status === 'LOW_CONFIDENCE';
+                const isUnknown = status === 'UNKNOWN' || result.crop_name === 'UNKNOWN';
+                const isNotSupported = status === 'UNSUPPORTED' || status === 'NOT_SUPPORTED';
+                const isServiceUnavailable = status === 'SERVICE_UNAVAILABLE';
 
-                const isHealthy = result.health_status === 'Healthy' || 
+                const displayPart = result.plant_part || result.image_type || activePart || 'Leaf';
+                const cropName = (result.crop_name && result.crop_name !== 'UNKNOWN')
+                  ? (result.crop_name || result.identified_crop || result.detected_crop)
+                  : (result.identified_crop && result.identified_crop !== 'UNKNOWN' ? result.identified_crop : (isLowConfidence ? 'Uncertain Crop' : isUnknown ? 'Unknown Crop' : isNotSupported ? 'Unsupported Subject' : 'Plant / Crop'));
+
+                const diseaseName = isConfirmed 
+                  ? (result.condition || result.disease || result.disease_name || result.detected_problem || 'Healthy Foliage')
+                  : isLowConfidence 
+                    ? (result.message || 'Image Quality Alert: Low Confidence')
+                    : isNotSupported
+                      ? (result.message || 'Unsupported Crop or Plant Part')
+                      : isServiceUnavailable
+                        ? (result.message || 'Multimodal Vision Service Unavailable')
+                        : (result.condition || result.disease_name || 'Unidentified');
+
+                const primaryConf = (result.disease_confidence !== undefined && result.disease_confidence !== null)
+                  ? result.disease_confidence
+                  : (result.crop_confidence !== undefined && result.crop_confidence !== null)
+                    ? result.crop_confidence
+                    : (result.confidence !== undefined && result.confidence !== null)
+                      ? result.confidence
+                      : null;
+
+                const isHealthy = isConfirmed && (
+                  result.health_status === 'Healthy' || 
                   (typeof result.severity === 'string' && (result.severity.toLowerCase().includes('healthy') || result.severity.toLowerCase().includes('optimal'))) ||
-                  (typeof diseaseName === 'string' && diseaseName.toLowerCase().includes('healthy'));
+                  (typeof diseaseName === 'string' && diseaseName.toLowerCase().includes('healthy'))
+                );
 
                 const getOptimalHealthText = (part) => {
                   const p = (part || '').toLowerCase();
@@ -470,18 +458,31 @@ export default function CropHealthPage() {
                 };
 
                 return (
-                  <div className={`os-card p-6 space-y-5 ${(isLowConfidence || isNotSupported) ? 'border-amber-500/40 bg-[#0E1A14]' : ''}`}>
+                  <div className={`os-card p-6 space-y-5 ${!isConfirmed ? 'border-amber-500/40 bg-[#0E1A14]' : ''}`}>
                     {/* 1. Identification Header */}
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-[#1B382D] pb-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono ${
-                            (isLowConfidence || isNotSupported)
-                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' 
-                              : 'bg-[#10B981]/15 text-[#10B981]'
+                            isConfirmed
+                              ? 'bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30'
+                              : isServiceUnavailable
+                                ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                           }`}>
-                            IDENTIFIED CROP: {cropName}
+                            {isConfirmed ? `CROP: ${cropName}` : isNotSupported ? 'STATUS: UNSUPPORTED' : isServiceUnavailable ? 'STATUS: SERVICE OFFLINE' : isLowConfidence ? 'STATUS: LOW CONFIDENCE' : 'STATUS: UNKNOWN CROP'}
                           </span>
+                          {isConfirmed && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30">
+                              {result.analysis_method || 'Confirmed Model'}
+                            </span>
+                          )}
+                          {result.crop_verified && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-blue-400" />
+                              User Verified
+                            </span>
+                          )}
                           {result.companion_crop && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono bg-blue-500/15 text-blue-400 border border-blue-500/30">
                               COMPANION: {result.companion_crop}
@@ -490,23 +491,23 @@ export default function CropHealthPage() {
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#0A1612] text-[#8FA59B] border border-[#1B382D]">
                             TYPE: {displayPart}
                           </span>
-                          {!isLowConfidence && !isNotSupported && result.crop_confidence !== undefined && result.crop_confidence !== null && (
+                          {isConfirmed && result.crop_confidence !== undefined && result.crop_confidence !== null && (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30">
                               Crop Conf: {result.crop_confidence}%
                             </span>
                           )}
                         </div>
-                        <h2 className={`text-xl font-bold font-heading ${(isLowConfidence || isNotSupported) ? 'text-amber-300' : 'text-[#F3F7F5]'}`}>
+                        <h2 className={`text-xl font-bold font-heading ${!isConfirmed ? 'text-amber-300' : 'text-[#F3F7F5]'}`}>
                           {diseaseName}
                         </h2>
                       </div>
 
                       <div className="text-right">
-                        <span className={`text-2xl font-black ${(isLowConfidence || isNotSupported) ? 'text-amber-400' : isHealthy ? 'text-[#10B981]' : (result.severity === 'Critical' || result.severity === 'High') ? 'text-red-400' : 'text-[#10B981]'}`}>
-                          {primaryConf}%
+                        <span className={`text-2xl font-black ${!isConfirmed ? 'text-amber-400' : isHealthy ? 'text-[#10B981]' : (result.severity === 'Critical' || result.severity === 'High') ? 'text-red-400' : 'text-[#10B981]'}`}>
+                          {primaryConf !== null ? `${primaryConf}%` : 'N/A'}
                         </span>
                         <span className="text-[10px] text-[#8FA59B] block">
-                          {(isLowConfidence || isNotSupported) ? 'Crop Confidence' : isHealthy ? 'Health Confidence' : 'Disease Confidence'}
+                          {!isConfirmed ? 'Inference Confidence' : isHealthy ? 'Health Confidence' : 'Disease Confidence'}
                         </span>
                       </div>
                     </div>
@@ -568,20 +569,36 @@ export default function CropHealthPage() {
                         {verifyingCrop && <span className="text-[10px] text-[#10B981] animate-pulse">Updating diagnosis...</span>}
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                        <span className="text-[11px] text-[#8FA59B] mr-1">Confirm or switch crop:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5 max-h-36 overflow-y-auto pr-1">
+                        <span className="text-[11px] text-[#8FA59B] mr-1 w-full sm:w-auto">Confirm or switch crop:</span>
                         {[
+                          { name: 'Rice (Paddy)', icon: '🌾' },
+                          { name: 'Wheat', icon: '🌾' },
+                          { name: 'Cotton', icon: '🌱' },
+                          { name: 'Sugarcane', icon: '🎋' },
+                          { name: 'Banana', icon: '🍌' },
+                          { name: 'Chilli', icon: '🌶️' },
+                          { name: 'Onion', icon: '🧅' },
+                          { name: 'Garlic', icon: '🧄' },
+                          { name: 'Brinjal', icon: '🍆' },
+                          { name: 'Groundnut', icon: '🥜' },
+                          { name: 'Mustard', icon: '🌼' },
+                          { name: 'Potato', icon: '🥔' },
+                          { name: 'Tomato', icon: '🍅' },
+                          { name: 'Corn / Maize', icon: '🌽' },
+                          { name: 'Mango', icon: '🥭' },
+                          { name: 'Citrus', icon: '🍋' },
                           { name: 'Coffee', icon: '☕' },
                           { name: 'Black Pepper', icon: '🌿' },
                           { name: 'Cardamom', icon: '🌱' },
                           { name: 'Arecanut', icon: '🌴' },
-                          { name: 'Potato', icon: '🥔' },
-                          { name: 'Tomato', icon: '🍅' },
-                          { name: 'Grape', icon: '🍇' },
-                          { name: 'Corn / Maize', icon: '🌽' },
                           { name: 'Ginger', icon: '🫚' },
                           { name: 'Carrot', icon: '🥕' },
-                          { name: 'Apple', icon: '🍎' }
+                          { name: 'Apple', icon: '🍎' },
+                          { name: 'Grape', icon: '🍇' },
+                          { name: 'Tea', icon: '🍵' },
+                          { name: 'Papaya', icon: '🍈' },
+                          { name: 'Coconut', icon: '🥥' }
                         ].map((c) => {
                           const isCurrent = cropName.toLowerCase().includes(c.name.toLowerCase().split(' ')[0]);
                           return (
@@ -603,42 +620,39 @@ export default function CropHealthPage() {
                           );
                         })}
                       </div>
-                    </div>
 
-                    {/* Spoken Diagnosis Audio Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-[#0A1612] border border-[#1B382D] text-xs">
-                      <div className="flex items-center gap-2 text-[#8FA59B]">
-                        <Volume2 className="w-4 h-4 text-[#10B981]" />
-                        <span className="font-semibold text-[#F3F7F5]">Spoken Diagnosis:</span>
-                        <span className="text-[11px]">Listen in your preferred language</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
+                      {/* Custom Crop Write-In Field */}
+                      <div className="pt-2 border-t border-[#1B382D]/60 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={customCropInput}
+                          onChange={(e) => setCustomCropInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && customCropInput.trim()) {
+                              e.preventDefault();
+                              handleVerifyCrop(customCropInput.trim());
+                              setCustomCropInput('');
+                            }
+                          }}
+                          placeholder="Type any other crop variant (e.g. Soyabean, Pomegranate, Cabbage)..."
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-[#0A1612] border border-[#1B382D] text-xs text-[#F3F7F5] placeholder-[#577366] focus:outline-none focus:border-[#10B981]"
+                        />
                         <button
                           type="button"
-                          onClick={() => handleSpeakDiagnosis('kn')}
-                          className={`px-2.5 py-1 rounded-lg font-medium text-xs flex items-center gap-1 transition-all cursor-pointer ${
-                            speakingLang === 'kn' ? 'bg-[#10B981] text-black font-bold' : 'bg-[#0E1A14] text-[#10B981] border border-[#10B981]/40 hover:bg-[#10B981]/15'
+                          disabled={!customCropInput.trim() || verifyingCrop}
+                          onClick={() => {
+                            if (customCropInput.trim()) {
+                              handleVerifyCrop(customCropInput.trim());
+                              setCustomCropInput('');
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            customCropInput.trim() && !verifyingCrop
+                              ? 'bg-[#10B981] text-[#061811] cursor-pointer'
+                              : 'bg-[#13271F] text-[#577366] cursor-not-allowed'
                           }`}
                         >
-                          <span>🔊 ಕನ್ನಡ</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSpeakDiagnosis('hi')}
-                          className={`px-2.5 py-1 rounded-lg font-medium text-xs flex items-center gap-1 transition-all cursor-pointer ${
-                            speakingLang === 'hi' ? 'bg-[#10B981] text-black font-bold' : 'bg-[#0E1A14] text-[#10B981] border border-[#10B981]/40 hover:bg-[#10B981]/15'
-                          }`}
-                        >
-                          <span>🔊 हिंदी</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSpeakDiagnosis('en')}
-                          className={`px-2.5 py-1 rounded-lg font-medium text-xs flex items-center gap-1 transition-all cursor-pointer ${
-                            speakingLang === 'en' ? 'bg-[#10B981] text-black font-bold' : 'bg-[#0E1A14] text-[#8FA59B] border border-[#1B382D] hover:text-white'
-                          }`}
-                        >
-                          <span>🔊 English</span>
+                          Verify Crop
                         </button>
                       </div>
                     </div>

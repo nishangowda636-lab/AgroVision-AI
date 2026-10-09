@@ -36,7 +36,12 @@ from PIL import Image
 from typing import Dict, Any, List, Optional, Tuple
 from dotenv import load_dotenv
 
-load_dotenv()
+_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_env_path = os.path.join(_base_dir, ".env")
+if os.path.exists(_env_path):
+    load_dotenv(_env_path)
+else:
+    load_dotenv()
 
 from app.ai.real_disease_model import (
     get_crop_health_model,
@@ -58,6 +63,21 @@ SUPPORTED_IMAGE_TYPES = [
     "Insect/pest",
     "Plant disease/damage"
 ]
+
+
+def _safe_float(val: Any) -> Optional[float]:
+    """Safely converts an arbitrary object or numeric string to float, avoiding type errors on non-numeric types."""
+    if val is None or isinstance(val, bool):
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+    return None
+
 
 def check_image_quality(image_path: str) -> Dict[str, Any]:
     """
@@ -106,8 +126,17 @@ def check_image_quality(image_path: str) -> Dict[str, Any]:
                 "brightness": round(mean_brightness, 1)
             }
 
-        # Laplacian sharpness check (non-blocking for smooth produce/graphics)
+        # Laplacian sharpness check
         laplacian_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        if laplacian_var < 6.0:
+            return {
+                "is_usable": False,
+                "rejection_reason": "Image is severely blurred or out of focus. Please capture a clear, steady photo holding camera steady at 15–20 cm under daylight.",
+                "laplacian_var": round(laplacian_var, 1),
+                "brightness": round(mean_brightness, 1),
+                "width": width,
+                "height": height
+            }
 
         return {
             "is_usable": True,
@@ -196,7 +225,7 @@ def detect_plant_part_heuristics(image_path: str) -> str:
     rhizome_ratio, rhizome_max_area = get_clean_mask_ratio(raw_rhizome, total_px)
 
     # Priority A: Earthy Potato Tubers (Freshly harvested tubers resting in soil or with canopy haulm)
-    if tuber_count >= 2 or (tuber_ratio >= 0.05 and soil_ratio >= 0.15) or tuber_ratio >= 0.08:
+    if tuber_count >= 2 or (tuber_ratio >= 0.20 and soil_ratio >= 0.15):
         return "Vegetable (Tuber)"
 
     # Priority B: Distinct Carrot / Orange Root Vegetable
@@ -334,11 +363,17 @@ EXPERT DIAGNOSTIC PROTOCOL:
      * Soil drainage and preventive sanitation against soil-borne pathogens.
 7. Microclimate & Weather Consideration:
    - Tailor specifically to the subject (e.g. for harvested ginger, shelter from rain and standing puddles to avoid bacterial soft rot; for field crops, optimal irrigation or spraying windows).
+8. NON-PLANT & UNRECOGNIZABLE OBJECT DETECTION:
+   - If the image displays agricultural machinery, tractors, vehicles, product packaging/bags, tools, buildings, humans, animals, or non-plant objects:
+     set "is_plant": false, "crop_name": "UNKNOWN", "condition": "Non-Plant / Unrelated Object", "health_status": "Low Confidence", "identification_confidence": null, "condition_confidence": null, "severity": "Unknown".
+   - If the image is severely blurred, unreadable, or out of focus:
+     set "is_plant": false, "crop_name": "UNKNOWN", "condition": "Severely Blurry Image", "health_status": "Low Confidence", "identification_confidence": null, "condition_confidence": null, "severity": "Unknown".
 
 Return ONLY valid JSON matching this schema:
 {{
+  "is_plant": true,
   "image_type": "Vegetable (Rhizome) / Fruit / Leaf / Whole plant / Seed / Stem",
-  "crop_name": "Specific Crop Name (e.g. Ginger, Maize, Potato, Tomato, Carrot)",
+  "crop_name": "Specific Crop Name (e.g. Ginger, Maize, Potato, Tomato, Carrot) or 'UNKNOWN'",
   "species_variety": "Botanical and common variety (e.g. Zingiber officinale)",
   "companion_crop": "Companion or background crop name if present, else null",
   "companion_observations": "Observations on companion crop if present, else null",
@@ -367,13 +402,10 @@ Return ONLY valid JSON matching this schema:
 }}"""
         parts_payload.append({"text": prompt_text})
 
-        # Try fast modern Gemini models with reliable latency
+        # Try active, supported Google Gemini models with fast fallback
         models_to_try = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-2.5-flash",
-            "gemini-flash-lite-latest",
-            "gemini-1.5-pro"
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash"
         ]
         for model_name in models_to_try:
             try:
@@ -406,7 +438,7 @@ Return ONLY valid JSON matching this schema:
                             parsed["analysis_method"] = "Gemini Vision"
                             parsed["analysis_source"] = "Gemini Vision"
                             return parsed
-            except Exception as model_err:
+            except Exception:
                 continue
 
     except Exception as e:
@@ -415,778 +447,21 @@ Return ONLY valid JSON matching this schema:
     return None
 
 
-def _heuristic_cv_plant_analyzer(
-    image_path: str,
-    plant_part: str = "Auto Detect",
-    weather_data: Optional[Dict[str, Any]] = None,
-    farm_crop: Optional[str] = None,
-    verified_crop: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Intelligent Agronomic Computer Vision & Rule Engine (Instant < 5ms fallback).
-    Produces accurate diagnoses for Potato, Carrot, Apple, Maize, Tomato, Ginger, Mango, Citrus, Wheat, Leaf, etc.
-    """
+def _extract_cv_image_metrics(image_path: str) -> Dict[str, Any]:
     try:
-        pil_img = Image.open(image_path).convert("RGB")
+        pil_img = Image.open(image_path).convert('RGB')
         cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
         hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
         total_px = float(cv_img.shape[0] * cv_img.shape[1])
-
-        # Color segmentations:
-        # Green healthy foliage (H: 28-88)
         green_mask = cv2.inRange(hsv, np.array([28, 35, 35]), np.array([88, 255, 255]))
-        green_ratio = float(np.sum(green_mask > 0)) / total_px
+        green_ratio = float(np.sum(green_mask > 0)) / max(total_px, 1.0)
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        laplacian_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        mean_brightness = float(np.mean(gray))
+        return {'green_ratio': round(green_ratio, 3), 'laplacian_sharpness': round(laplacian_var, 1), 'mean_brightness': round(mean_brightness, 1), 'width': cv_img.shape[1], 'height': cv_img.shape[0]}
+    except Exception:
+        return {'green_ratio': 0.0, 'laplacian_sharpness': 0.0, 'mean_brightness': 0.0, 'width': 0, 'height': 0}
 
-        # Orange Root / Carrot (H: 8-18, S: 170-255, V: 180-255)
-        orange_mask = cv2.inRange(hsv, np.array([8, 170, 180]), np.array([18, 255, 255]))
-        orange_ratio = float(np.sum(orange_mask > 0)) / total_px
-
-        # Red Apple / Tomato (H: 0-8 or 168-180, S: 100-255, V: 80-255)
-        red_mask1 = cv2.inRange(hsv, np.array([0, 100, 80]), np.array([8, 255, 255]))
-        red_mask2 = cv2.inRange(hsv, np.array([168, 100, 80]), np.array([180, 255, 255]))
-        red_mask = cv2.bitwise_or(red_mask1, red_mask2)
-        red_ratio = float(np.sum(red_mask > 0)) / total_px
-
-        # Yellow Maize / Corn / Citrus (H: 19-36, S: 120-255, V: 180-255)
-        yellow_mask = cv2.inRange(hsv, np.array([19, 120, 180]), np.array([36, 255, 255]))
-        yellow_ratio = float(np.sum(yellow_mask > 0)) / total_px
-
-        # Tuber Potato Buff-Tan Periderm Mask (H: 10-32, S: 25-185, V: 60-240)
-        tuber_mask = cv2.inRange(hsv, np.array([10, 25, 60]), np.array([32, 185, 240]))
-        clean_tuber = cv2.morphologyEx(tuber_mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-        tuber_ratio = float(np.sum(clean_tuber > 0)) / total_px
-
-        # Soil mask (H: 0-180, S: 0-255, V: 0-65)
-        soil_mask = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 65]))
-        clean_soil = cv2.morphologyEx(soil_mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-        soil_ratio = float(np.sum(clean_soil > 0)) / total_px
-
-        # Count tuber contours
-        contours, _ = cv2.findContours(clean_tuber, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        tuber_count = sum(1 for c in contours if cv2.contourArea(c) > (total_px * 0.003))
-
-        # Check greening strictly on the tuber surface
-        tuber_px = float(np.sum(clean_tuber > 0))
-        tuber_green = cv2.bitwise_and(clean_tuber, green_mask)
-        tuber_green_ratio = float(np.sum(tuber_green > 0)) / max(tuber_px, 1.0)
-
-        # Brown necrosis / lesions (H: 8-18, low-to-mid V)
-        brown_mask = cv2.inRange(hsv, np.array([8, 60, 20]), np.array([18, 255, 180]))
-        brown_ratio = float(np.sum(brown_mask > 0)) / total_px
-
-        # Purple produce (H: 118-165)
-        purple_mask = cv2.inRange(hsv, np.array([118, 30, 20]), np.array([165, 255, 220]))
-        purple_ratio = float(np.sum(purple_mask > 0)) / total_px
-
-        # Golden-Buff / Tan Rhizome (Ginger / Turmeric) (H: 13-28, S: 25-145, V: 110-245)
-        rhizome_mask = cv2.inRange(hsv, np.array([13, 25, 110]), np.array([28, 145, 245]))
-        rhizome_ratio = float(np.sum(rhizome_mask > 0)) / total_px
-
-        # Disambiguate produce type
-        category = plant_part if plant_part and plant_part not in ["Auto", "Auto Detect", "None", "Unknown"] else None
-        if not category:
-            if tuber_count >= 2 or (tuber_ratio >= 0.05 and soil_ratio >= 0.15) or tuber_ratio >= 0.08:
-                category = "Vegetable (Tuber)"
-            elif rhizome_ratio > 0.07 and yellow_ratio >= 0.03 and tuber_count < 2:
-                category = "Vegetable (Rhizome)"
-            elif orange_ratio > 0.10:
-                category = "Vegetable"
-            elif red_ratio > 0.10:
-                category = "Fruit"
-            elif yellow_ratio > 0.10 and rhizome_ratio < 0.05:
-                category = "Seed"
-            elif purple_ratio > 0.10:
-                category = "Fruit"
-            elif green_ratio > 0.20:
-                category = "Leaf"
-            else:
-                category = "Leaf"
-
-        # -------------------------------------------------------------
-        # 0. POTATO & TUBER VEGETABLES (PRIORITY FOR TUBERS / HARVEST)
-        # -------------------------------------------------------------
-        is_potato_farm = bool(farm_crop and "potato" in farm_crop.lower())
-        is_potato_visual = (tuber_count >= 2 or (tuber_ratio >= 0.05 and soil_ratio >= 0.15) or tuber_ratio >= 0.08 or (category and ("tuber" in category.lower() or "potato" in category.lower())))
-        
-        if is_potato_farm or is_potato_visual:
-            crop_name = "Potato"
-            species = "Solanum tuberosum"
-            
-            # Check for brown rot/blemish strictly on tuber periderm (excluding dark soil clods)
-            tuber_brown = cv2.bitwise_and(clean_tuber, brown_mask)
-            tuber_brown_ratio = float(np.sum(tuber_brown > 0)) / max(tuber_px, 1.0)
-
-            if tuber_green_ratio > 0.15:
-                condition = "Tuber Greening (Solanine Accumulation)"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 95.0
-                cond_conf = 88.0
-                obs = [
-                    f"Tuber surface shows localized chlorophyll development (~{int(tuber_green_ratio*100)}% of tuber skin).",
-                    "Solanine glycoalkaloid synthesis triggered by ambient light exposure on dug tubers.",
-                    "Potato foliage visible in background; soil substrate present."
-                ]
-                causes = ["Prolonged exposure of harvested tubers to sunlight or shallow soil cover during tuber bulking."]
-                actions = [
-                    "1. Immediately move tubers into dark, shaded storage away from any direct or diffuse sunlight.",
-                    "2. Do not consume heavily greened tubers (solanine causes bitterness and digestive toxicity).",
-                    "3. For future crops, ensure adequate hilling/ridging (20–25 cm ridge height) to shield growing tubers."
-                ]
-            elif tuber_brown_ratio > 0.45 and tuber_ratio > 0.05:
-                condition = "Tuber Surface Blemish / Harvest Abrasion"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 94.0
-                cond_conf = 85.0
-                obs = [
-                    f"Superficial post-harvest periderm wear and localized brown abrasions covering ~{int(tuber_brown_ratio*100)}% of tuber skin.",
-                    "Internal flesh remains firm with no soft rot (Pectobacterium) or late blight dry rot.",
-                    "Rich friable soil clods visible around harvested produce."
-                ]
-                causes = ["Mechanical friction during digging, rough sorting, or rocky soil contact."]
-                actions = [
-                    "1. Shade Curing: Cure tubers at 15–18°C with 85–90% RH for 10–14 days to promote suberization (wound healing).",
-                    "2. Segregation: Sort out tubers with deep gouges or cuts for prompt domestic use.",
-                    "3. Cold Storage: Store sound cured tubers in dark, well-aerated crates at 7–10°C."
-                ]
-            else:
-                condition = "Healthy Freshly Harvested Potato Tubers"
-                health_status = "Healthy"
-                severity = "Low (Healthy)"
-                crop_conf = 96.5
-                cond_conf = 94.0
-                obs = [
-                    f"Cluster of {max(tuber_count, 1)} fresh, plump potato tubers (Solanum tuberosum) with firm buff-tan periderm and dormant eyes.",
-                    "Clean periderm completely free of soft rot, hollow heart, late blight lesions, or solanine greening.",
-                    "Moist, dark friable soil bed typical of potato harvest conditions.",
-                    "Upright green potato foliage (haulm) visible in background exhibiting healthy vegetative vigor." if green_ratio > 0.15 else "Intact tuber structure with healthy periderm integrity."
-                ]
-                causes = ["Optimal tuber bulking, timely harvest, and sound soil moisture management."]
-                actions = [
-                    "1. Curing: Cure harvested tubers in a cool, well-ventilated, shaded shed (15–18°C, 85–90% RH) for 10–14 days to thicken skin and heal minor harvest abrasions.",
-                    "2. Dark Storage: Transfer cured potatoes into dark, well-aerated wooden crates at 7–10°C. Protect strictly from light to avoid greening.",
-                    "3. Field Sanitation: Clean up leftover diseased vines and small uncollected tubers to prevent volunteer potato blight reservoirs."
-                ]
-            guidance = "Potato tubers are in excellent, sound commercial grade. Follow standard shade curing before bulk storage."
-            return {
-                "image_type": "Vegetable (Tuber)",
-                "crop_name": crop_name,
-                "species_variety": species,
-                "identification_confidence": crop_conf,
-                "health_status": health_status,
-                "condition": condition,
-                "disease": condition,
-                "condition_confidence": cond_conf,
-                "disease_confidence": cond_conf,
-                "severity": severity,
-                "condition_type": "Healthy Produce (Tuber)" if health_status == "Healthy" else "Produce Quality",
-                "visual_observations": obs,
-                "possible_causes": causes,
-                "recommended_actions": actions,
-                "warnings": [],
-                "prevention": "Ensure timely hilling to prevent tuber greening in soil; cure tubers in shade immediately after digging.",
-                "monitoring_plan": "Inspect stored potato crates weekly for soft rot or premature sprouting.",
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "contact_expert": False,
-                "farmer_guidance": guidance,
-                "weather_consideration": "Shelter dug tubers from direct sunlight and sudden rain showers to preserve periderm quality.",
-                "weather_correlation": "Shelter dug tubers from direct sunlight and sudden rain showers to preserve periderm quality.",
-                "crop_verified": True,
-                "analysis_method": "Agronomic Computer Vision"
-            }
-
-        # -------------------------------------------------------------
-        # 1. GINGER & TURMERIC (RHIZOME PRODUCE / COMPANION CROPS)
-        # -------------------------------------------------------------
-        if (rhizome_ratio >= 0.07 and yellow_ratio >= 0.03) or (category and "rhizome" in category.lower()):
-            crop_name = "Ginger"
-            species = "Zingiber officinale"
-            companion = "Corn / Maize (Zea mays)" if green_ratio >= 0.15 else None
-
-            if brown_ratio > 0.22:
-                condition = "Rhizome Surface Blemish / Moisture Discoloration"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 94.0
-                cond_conf = 84.0
-                obs = [
-                    f"Golden-buff ginger rhizome fingers with localized surface discoloration covering ~{int(brown_ratio*100)}% of epidermis.",
-                    "Superficial post-harvest abrasion or contact moisture spots; core flesh remains firm.",
-                    "Standing companion corn/maize stalks visible in background exhibiting healthy upright growth." if companion else "Surrounding soil clods present from recent harvesting."
-                ]
-                actions = [
-                    "1. Post-Harvest Sorting: Segregate blemished rhizomes from clean, intact seed or commercial lots.",
-                    "2. Curing: Cure sound rhizomes in shade (25–30°C, 75–80% RH) for 3–5 days to toughen periderm.",
-                    "3. Safe Storage: Store in clean, dry, ventilated crates or dry sand at 12–14°C."
-                ]
-                w_guidance = "Protect harvested rhizomes from rain and moisture accumulation to avoid bacterial soft rot."
-            else:
-                condition = "Healthy Fresh Ginger Rhizomes" + (" (with Maize Companion Crop)" if companion else "")
-                health_status = "Healthy"
-                severity = "Low (Healthy)"
-                crop_conf = 96.5
-                cond_conf = 93.0
-                obs = [
-                    "Prominent fresh multi-fingered ginger rhizome (Zingiber officinale) with firm, creamy-tan to golden epidermis and visible growth nodes.",
-                    "Crisp, plump internal tissue free of soft rot (Pythium aphanidermatum), bacterial wilt, or fungal dry lesions.",
-                    "Standing young companion corn/maize (Zea mays) stalks visible in background exhibiting upright, healthy vegetative growth." if companion else "Clean rhizome structure with intact epidermis.",
-                    "Moist, friable soil bed conducive to healthy root and rhizome development."
-                ]
-                actions = [
-                    "1. Post-Harvest Handling: Gently clean off adhering soil and cure rhizomes in shade (25–30°C, 75–80% RH) for 3–5 days to set the skin.",
-                    "2. Storage: Store in dry, well-ventilated crates or clean dry sand at 12–14°C to prevent desiccation and sprouting.",
-                    "3. Companion Crop Management: For the standing corn/maize stalks, maintain regular furrow irrigation and apply balanced nitrogen top-dressing at the knee-high stage."
-                ]
-                w_guidance = "Shelter harvested ginger rhizomes from direct rainfall to prevent bacterial soft rot. In the field, maintain deep furrow drainage."
-
-            guidance = "Ginger rhizomes are in excellent commercial grade. Follow standard shade curing."
-            return {
-                "image_type": "Vegetable (Rhizome)",
-                "crop_name": crop_name,
-                "companion_crop": companion,
-                "companion_observations": "Young vegetative corn stalks with upright growth and clean lower nodes." if companion else None,
-                "species_variety": species,
-                "identification_confidence": crop_conf,
-                "health_status": health_status,
-                "condition": condition,
-                "disease": condition,
-                "condition_confidence": cond_conf,
-                "disease_confidence": cond_conf,
-                "severity": severity,
-                "condition_type": "Healthy Produce (Rhizome)" if health_status == "Healthy" else "Produce Quality",
-                "visual_observations": obs,
-                "possible_causes": ["Optimal rhizome maturity, friable soil cultivation, and sound harvest timing."],
-                "recommended_actions": actions,
-                "warnings": [],
-                "prevention": "Construct 30cm raised beds with good drainage to prevent Pythium soft rot; use Trichoderma-treated seed rhizomes.",
-                "monitoring_plan": "Inspect stored rhizomes weekly; scout field companion plants for shoot borers.",
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "contact_expert": False,
-                "farmer_guidance": guidance,
-                "weather_consideration": w_guidance,
-                "weather_correlation": w_guidance,
-                "analysis_method": "Agronomic Computer Vision"
-            }
-
-        # -------------------------------------------------------------
-        # 1. PLANTATION & SPICES CROPS (COFFEE, BLACK PEPPER, CARDAMOM, ARECANUT)
-        # -------------------------------------------------------------
-        farm_crop_low = (farm_crop or "").lower().strip()
-        verified_crop_low = (verified_crop or "").lower().strip()
-        target_crop_match = farm_crop_low or verified_crop_low
-
-        if "coffee" in target_crop_match:
-            crop_name = "Coffee"
-            species = "Coffea arabica / canephora"
-            if yellow_ratio > 0.15 or (orange_ratio > 0.08 and brown_ratio > 0.10):
-                kb_key = "Coffee___Rust"
-            elif brown_ratio > 0.20:
-                kb_key = "Coffee___Black_rot"
-            elif category in ["Fruit", "Seed"] or red_ratio > 0.10:
-                kb_key = "Coffee___Berry_borer" if brown_ratio > 0.10 else "Coffee___healthy"
-            elif yellow_ratio > 0.08 and brown_ratio > 0.08:
-                kb_key = "Coffee___Cercospora_leaf_spot"
-            else:
-                kb_key = "Coffee___healthy"
-
-            kb_item = AGRONOMIC_KNOWLEDGE_BASE.get(kb_key, AGRONOMIC_KNOWLEDGE_BASE["Coffee___healthy"])
-            is_hlthy = "healthy" in kb_key.lower()
-            return {
-                "image_type": category or "Leaf",
-                "crop_name": "Coffee",
-                "species_variety": species,
-                "identification_confidence": 95.0,
-                "health_status": kb_item["health_status"],
-                "condition": kb_item["disease"],
-                "disease": kb_item["disease"],
-                "condition_confidence": 92.0 if is_hlthy else 88.5,
-                "disease_confidence": 92.0 if is_hlthy else 88.5,
-                "severity": kb_item["severity"],
-                "condition_type": kb_item.get("condition_type", "Plantation Pathology"),
-                "visual_observations": [kb_item["visible_symptoms"]],
-                "possible_causes": [kb_item["possible_causes"]],
-                "recommended_actions": [a.strip() for a in kb_item["recommended_next_steps"].split("\n") if a.strip()],
-                "recommended_next_steps": kb_item["recommended_next_steps"],
-                "next_steps": kb_item["recommended_next_steps"],
-                "recommendation": kb_item["recommended_next_steps"],
-                "warnings": [],
-                "prevention": kb_item["prevention"],
-                "monitoring_plan": kb_item.get("monitoring_plan", "Scout plantation canopy weekly."),
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "crop_verified": True,
-                "contact_expert": (kb_item["severity"] == "High"),
-                "farmer_guidance": kb_item.get("when_to_contact_expert", "Consult local coffee board extension officer if symptoms worsen."),
-                "weather_consideration": kb_item.get("weather_consideration", "Maintain shade regulation before heavy monsoon rains."),
-                "weather_correlation": kb_item.get("weather_consideration"),
-                "analysis_method": "Agronomic Knowledge Base"
-            }
-
-        if "pepper" in target_crop_match:
-            crop_name = "Black Pepper"
-            species = "Piper nigrum"
-            if yellow_ratio > 0.18 and brown_ratio > 0.12:
-                kb_key = "Pepper___Quick_wilt"
-            elif brown_ratio > 0.18:
-                kb_key = "Pepper___Anthracnose"
-            elif brown_ratio > 0.08 or (category in ["Seed", "Fruit"]):
-                kb_key = "Pepper___Pollu_beetle"
-            else:
-                kb_key = "Pepper___healthy"
-
-            kb_item = AGRONOMIC_KNOWLEDGE_BASE.get(kb_key, AGRONOMIC_KNOWLEDGE_BASE["Pepper___healthy"])
-            is_hlthy = "healthy" in kb_key.lower()
-            return {
-                "image_type": category or "Leaf",
-                "crop_name": "Black Pepper",
-                "species_variety": species,
-                "identification_confidence": 95.0,
-                "health_status": kb_item["health_status"],
-                "condition": kb_item["disease"],
-                "disease": kb_item["disease"],
-                "condition_confidence": 93.0 if is_hlthy else 89.0,
-                "disease_confidence": 93.0 if is_hlthy else 89.0,
-                "severity": kb_item["severity"],
-                "condition_type": kb_item.get("condition_type", "Spice Crop Pathology"),
-                "visual_observations": [kb_item["visible_symptoms"]],
-                "possible_causes": [kb_item["possible_causes"]],
-                "recommended_actions": [a.strip() for a in kb_item["recommended_next_steps"].split("\n") if a.strip()],
-                "recommended_next_steps": kb_item["recommended_next_steps"],
-                "next_steps": kb_item["recommended_next_steps"],
-                "recommendation": kb_item["recommended_next_steps"],
-                "warnings": [],
-                "prevention": kb_item["prevention"],
-                "monitoring_plan": kb_item.get("monitoring_plan", "Inspect vine basins weekly."),
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "crop_verified": True,
-                "contact_expert": (kb_item["severity"] == "High"),
-                "farmer_guidance": kb_item.get("when_to_contact_expert", "Contact spice board extension officer if symptoms spread."),
-                "weather_consideration": kb_item.get("weather_consideration", "Ensure collar drainage during heavy rainfall."),
-                "weather_correlation": kb_item.get("weather_consideration"),
-                "analysis_method": "Agronomic Knowledge Base"
-            }
-
-        if "cardamom" in target_crop_match:
-            crop_name = "Cardamom"
-            species = "Elettaria cardamomum"
-            if yellow_ratio > 0.15:
-                kb_key = "Cardamom___Katte_disease"
-            elif brown_ratio > 0.15:
-                kb_key = "Cardamom___Capsule_rot"
-            else:
-                kb_key = "Cardamom___healthy"
-
-            kb_item = AGRONOMIC_KNOWLEDGE_BASE.get(kb_key, AGRONOMIC_KNOWLEDGE_BASE["Cardamom___healthy"])
-            is_hlthy = "healthy" in kb_key.lower()
-            return {
-                "image_type": category or "Leaf",
-                "crop_name": "Cardamom",
-                "species_variety": species,
-                "identification_confidence": 94.0,
-                "health_status": kb_item["health_status"],
-                "condition": kb_item["disease"],
-                "disease": kb_item["disease"],
-                "condition_confidence": 91.0 if is_hlthy else 88.0,
-                "disease_confidence": 91.0 if is_hlthy else 88.0,
-                "severity": kb_item["severity"],
-                "condition_type": kb_item.get("condition_type", "Spice Crop Pathology"),
-                "visual_observations": [kb_item["visible_symptoms"]],
-                "possible_causes": [kb_item["possible_causes"]],
-                "recommended_actions": [a.strip() for a in kb_item["recommended_next_steps"].split("\n") if a.strip()],
-                "recommended_next_steps": kb_item["recommended_next_steps"],
-                "next_steps": kb_item["recommended_next_steps"],
-                "recommendation": kb_item["recommended_next_steps"],
-                "warnings": [],
-                "prevention": kb_item["prevention"],
-                "monitoring_plan": kb_item.get("monitoring_plan", "Inspect clumps weekly."),
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "crop_verified": True,
-                "contact_expert": (kb_item["severity"] == "High"),
-                "farmer_guidance": kb_item.get("when_to_contact_expert", "Consult spice research institute if katte virus observed."),
-                "weather_consideration": kb_item.get("weather_consideration", "Ensure shade and moisture balance."),
-                "weather_correlation": kb_item.get("weather_consideration"),
-                "analysis_method": "Agronomic Knowledge Base"
-            }
-
-        if "arecanut" in target_crop_match:
-            crop_name = "Arecanut"
-            species = "Areca catechu"
-            if brown_ratio > 0.15:
-                kb_key = "Arecanut___Koleroga"
-            elif yellow_ratio > 0.15:
-                kb_key = "Arecanut___Yellow_leaf_disease"
-            else:
-                kb_key = "Arecanut___healthy"
-
-            kb_item = AGRONOMIC_KNOWLEDGE_BASE.get(kb_key, AGRONOMIC_KNOWLEDGE_BASE["Arecanut___healthy"])
-            is_hlthy = "healthy" in kb_key.lower()
-            return {
-                "image_type": category or "Leaf",
-                "crop_name": "Arecanut",
-                "species_variety": species,
-                "identification_confidence": 94.0,
-                "health_status": kb_item["health_status"],
-                "condition": kb_item["disease"],
-                "disease": kb_item["disease"],
-                "condition_confidence": 92.0 if is_hlthy else 88.0,
-                "disease_confidence": 92.0 if is_hlthy else 88.0,
-                "severity": kb_item["severity"],
-                "condition_type": kb_item.get("condition_type", "Plantation Pathology"),
-                "visual_observations": [kb_item["visible_symptoms"]],
-                "possible_causes": [kb_item["possible_causes"]],
-                "recommended_actions": [a.strip() for a in kb_item["recommended_next_steps"].split("\n") if a.strip()],
-                "recommended_next_steps": kb_item["recommended_next_steps"],
-                "next_steps": kb_item["recommended_next_steps"],
-                "recommendation": kb_item["recommended_next_steps"],
-                "warnings": [],
-                "prevention": kb_item["prevention"],
-                "monitoring_plan": kb_item.get("monitoring_plan", "Inspect crowns and fallen nuts weekly."),
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "crop_verified": True,
-                "contact_expert": (kb_item["severity"] == "High"),
-                "farmer_guidance": kb_item.get("when_to_contact_expert", "Consult CPCRI for Koleroga or Yellow Leaf disease management."),
-                "weather_consideration": kb_item.get("weather_consideration", "Ensure drainage channels are clear before monsoon."),
-                "weather_correlation": kb_item.get("weather_consideration"),
-                "analysis_method": "Agronomic Knowledge Base"
-            }
-
-        # -------------------------------------------------------------
-        # 2. CARROT & ROOT VEGETABLES
-        # -------------------------------------------------------------
-        if orange_ratio >= 0.12 or (category == "Vegetable" and orange_ratio > 0.06):
-            crop_name = "Carrot"
-            species = "Daucus carota subsp. sativus"
-            if brown_ratio > 0.15:
-                condition = "Surface Blemish / Storage Discoloration"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 94.0
-                cond_conf = 85.0
-                obs = [
-                    f"Characteristic orange root coloration with localized surface blemishes covering ~{int(brown_ratio*100)}% of root skin.",
-                    "Superficial post-harvest skin wear or moisture abrasion."
-                ]
-                causes = ["Harvest handling abrasions, high ambient storage humidity, or contact bruising."]
-                actions = [
-                    "1. Store washed and dried carrots in cold storage (0–4°C, 95% RH) in perforated crates.",
-                    "2. Segregate damaged roots from clean bulk lots.",
-                    "3. Avoid storing near ethylene-producing ripe fruits."
-                ]
-            else:
-                condition = "Healthy Fresh Carrot Produce"
-                health_status = "Healthy"
-                severity = "Low (Healthy)"
-                crop_conf = 96.0
-                cond_conf = 92.0
-                obs = [
-                    "Vibrant orange beta-carotene pigmentation with uniform tapered root morphology.",
-                    "Crisp periderm integrity free of soft rot, cavitation, or sprouting."
-                ]
-                causes = ["Optimum harvest maturity and healthy root cultivation."]
-                actions = [
-                    "1. Maintain cold chain at 0–4°C with 95% relative humidity to preserve crunch.",
-                    "2. Keep produce clean, cool, and ventilated."
-                ]
-            guidance = "Carrot produce is in good commercial grade. Maintain standard cold chain."
-            return {
-                "image_type": "Vegetable",
-                "crop_name": crop_name,
-                "species_variety": species,
-                "identification_confidence": crop_conf,
-                "health_status": health_status,
-                "condition": condition,
-                "condition_confidence": cond_conf,
-                "severity": severity,
-                "condition_type": "Vegetable Produce Quality",
-                "visual_observations": obs,
-                "possible_causes": causes,
-                "recommended_actions": actions,
-                "warnings": [],
-                "prevention": "Handle gently during washing and sorting; store at 0–4°C.",
-                "monitoring_plan": "Inspect crates weekly for moisture buildup.",
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "contact_expert": False,
-                "farmer_guidance": guidance,
-                "analysis_method": "Agronomic Computer Vision"
-            }
-
-        # -------------------------------------------------------------
-        # 2. FRUIT PRODUCE (UNSUPPORTED - NO VALIDATED VISION MODEL)
-        # -------------------------------------------------------------
-        if red_ratio >= 0.12 or category == "Fruit":
-            return {
-                "status": "UNSUPPORTED",
-                "analysis_status": "UNSUPPORTED",
-                "reason": "No validated model is available for Fruit produce.",
-                "image_type": "Fruit",
-                "plant_part": "Fruit",
-                "crop_name": "UNKNOWN",
-                "identified_crop": "UNKNOWN",
-                "detected_crop": "Unknown",
-                "crop": "UNKNOWN",
-                "disease": "Not Supported for Fruit",
-                "disease_name": "Not Supported for Fruit",
-                "condition": "Not Supported for Fruit",
-                "detected_problem": "Not Supported for Fruit",
-                "health_status": "Not Supported",
-                "crop_confidence": None,
-                "disease_confidence": None,
-                "confidence": None,
-                "identification_confidence": None,
-                "condition_confidence": None,
-                "severity": "Unknown",
-                "visual_observations": ["Harvested fruit produce has no validated ML model in models/crop_health."],
-                "possible_causes": ["Unsupported plant part."],
-                "recommended_actions": ["Upload a clear photo of the crop leaf or plant canopy."],
-                "recommended_next_steps": "Please upload a clear photo of the crop leaf or vegetative canopy for validated AI analysis.",
-                "recommendation": "No validated model is available for Fruit produce. Please upload a clear photo of the crop leaf or plant canopy for validated analysis.",
-                "message": "No validated model is available for this plant part.",
-                "analysis_method": "Plant-Part Router (Unsupported Category)"
-            }
-
-        # -------------------------------------------------------------
-        # 3. MAIZE / CORN (SEED / COB / GRAIN)
-        # -------------------------------------------------------------
-        if yellow_ratio >= 0.15 or (category == "Seed" and (yellow_ratio > 0.08 or tuber_ratio > 0.10)):
-            crop_name = "Maize (Corn)"
-            species = "Zea mays"
-            if brown_ratio > 0.18:
-                condition = "Discolored Seed Lot / Moisture Stress"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 92.0
-                cond_conf = 83.0
-                obs = [
-                    f"Golden-amber kernels with localized darkening covering ~{int(brown_ratio*100)}% of sample.",
-                    "Visible seed coat moisture or uneven grain maturity."
-                ]
-                causes = ["High moisture content during harvest or storage in non-hermetic bags."]
-                actions = [
-                    "1. Sun-dry grains on clean tarpaulins until moisture reaches 10–12%.",
-                    "2. Conduct wet-cloth germination test before sowing.",
-                    "3. Apply bio-fungicide seed treatment (Trichoderma viride @ 4g/kg seed)."
-                ]
-            else:
-                condition = "Visually Sound Maize Grain / Cob"
-                health_status = "Healthy"
-                severity = "Low (Healthy)"
-                crop_conf = 95.0
-                cond_conf = 90.0
-                obs = [
-                    "Uniform golden-yellow kernel filling with sound endosperm density.",
-                    "No visible mold, fungal mycelium, or insect emergence holes."
-                ]
-                causes = ["Timely harvest and proper post-harvest drying."]
-                actions = [
-                    "1. Store in airtight hermetic PICS bags at <12% moisture.",
-                    "2. Apply seed dressing prior to seasonal sowing."
-                ]
-            guidance = "Seed identification is visual only. Conduct germination viability test before planting."
-            return {
-                "image_type": "Seed",
-                "crop_name": crop_name,
-                "species_variety": species,
-                "identification_confidence": crop_conf,
-                "health_status": health_status,
-                "condition": condition,
-                "condition_confidence": cond_conf,
-                "severity": severity,
-                "condition_type": "Seed & Grain Quality",
-                "visual_observations": obs,
-                "possible_causes": causes,
-                "recommended_actions": actions,
-                "warnings": [],
-                "prevention": "Store grains in moisture-proof hermetic bags below 12% moisture.",
-                "monitoring_plan": "Check grain temperature and weevil activity monthly.",
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "contact_expert": False,
-                "farmer_guidance": guidance,
-                "analysis_method": "Agronomic Computer Vision"
-            }
-
-        # -------------------------------------------------------------
-        # 4. POTATO & TUBER VEGETABLES
-        # -------------------------------------------------------------
-        if tuber_ratio >= 0.15 or (category == "Vegetable" and tuber_ratio > 0.10):
-            crop_name = "Potato"
-            species = "Solanum tuberosum"
-            if brown_ratio > 0.20 or green_ratio > 0.10:
-                condition = "Tuber Blemish / Storage Discoloration"
-                health_status = "Possible Issue"
-                severity = "Moderate"
-                crop_conf = 92.0
-                cond_conf = 82.0
-                obs = [
-                    "Surface skin discoloration or localized dry lesions on tuber periderm.",
-                    "Tuber texture shows minor surface abrasions."
-                ]
-                causes = ["Rough harvest handling, damp storage, or early skin breakdown."]
-                actions = [
-                    "1. Cure tubers in a dark, well-ventilated area at 15°C for 10 days before cold storage.",
-                    "2. Store in dark crates at 8–10°C with 85–90% RH.",
-                    "3. Avoid light exposure to prevent greening (solanine toxicity)."
-                ]
-            else:
-                condition = "Healthy Potato Tuber Produce"
-                health_status = "Healthy"
-                severity = "Low (Healthy)"
-                crop_conf = 94.0
-                cond_conf = 90.0
-                obs = [
-                    "Firm, uniform tuber periderm with dormant eyes and healthy buff coloration.",
-                    "Free of soft rot, hollow heart, sprouting, or green pigmentation."
-                ]
-                causes = ["Adequate soil mounding and proper post-harvest curing."]
-                actions = [
-                    "1. Store in dark, cool, ventilated storage at 8–10°C.",
-                    "2. Inspect weekly and maintain good airflow."
-                ]
-            guidance = "Potato tubers are in sound commercial condition. Keep in dark storage."
-            return {
-                "image_type": "Vegetable",
-                "crop_name": crop_name,
-                "species_variety": species,
-                "identification_confidence": crop_conf,
-                "health_status": health_status,
-                "condition": condition,
-                "condition_confidence": cond_conf,
-                "severity": severity,
-                "condition_type": "Tuber Quality",
-                "visual_observations": obs,
-                "possible_causes": causes,
-                "recommended_actions": actions,
-                "warnings": [],
-                "prevention": "Ensure proper curing and dark, ventilated storage.",
-                "monitoring_plan": "Check tuber firmness and temperature weekly.",
-                "fertilizer_link": False,
-                "needs_field_verification": False,
-                "contact_expert": False,
-                "farmer_guidance": guidance,
-                "analysis_method": "Agronomic Computer Vision"
-            }
-
-        # -------------------------------------------------------------
-        # 5. FOLIAR LEAF & CROP CANOPY
-        # -------------------------------------------------------------
-        if yellow_ratio > 0.22:
-            crop_name = "Crop Foliage"
-            condition = "Foliar Chlorosis / Nutrient Stress"
-            health_status = "Possible Issue"
-            severity = "Moderate"
-            crop_conf = 90.0
-            cond_conf = 82.0
-            obs = [
-                f"Yellowing (chlorosis) covering ~{int(yellow_ratio * 100)}% of the leaf surface.",
-                "Green venation with pale interveinal zones indicative of nutrient mobility stress."
-            ]
-            causes = [
-                "Nitrogen (N) or Iron/Magnesium (Fe/Mg) deficiency.",
-                "Root zone waterlogging causing transient nutrient uptake restriction."
-            ]
-            actions = [
-                "1. Apply foliar spray of 19:19:19 (Water Soluble NPK @ 5g/L) or Chelated Micronutrient mix (1.5g/L).",
-                "2. Verify root zone aeration and avoid standing water in furrows.",
-                "3. Check soil pH to confirm micronutrient availability."
-            ]
-            guidance = "Consult Fertilizer Advisor to balance soil NPK and micronutrient dosage."
-            fertilizer_link = True
-
-        elif brown_ratio > 0.18:
-            crop_name = "Crop Foliage"
-            condition = "Necrotic Foliar Spotting / Possible Fungal Infection"
-            health_status = "High Risk"
-            severity = "Moderate"
-            crop_conf = 89.0
-            cond_conf = 80.0
-            obs = [
-                f"Dark brown necrotic lesions covering ~{int(brown_ratio * 100)}% of foliage.",
-                "Irregular lesion margins with localized tissue breakdown."
-            ]
-            causes = [
-                "Foliar fungal pathogen activity.",
-                "Extended leaf wetness from morning dew or overhead irrigation."
-            ]
-            actions = [
-                "1. Remove and destroy heavily spotted lower leaves away from the field.",
-                "2. Apply Copper Oxychloride 50% WP (2.5 g/L) or bio-fungicide Trichoderma viride.",
-                "3. Ensure bottom drip irrigation to prevent water splashing onto leaves."
-            ]
-            guidance = "Inspect middle and top canopy on Day 3 to confirm lesions are halted."
-            fertilizer_link = False
-
-        else:
-            crop_name = "Crop Foliage"
-            condition = "Healthy Green Foliage"
-            health_status = "Healthy"
-            severity = "Low (Healthy)"
-            crop_conf = 92.0
-            cond_conf = 90.0
-            obs = [
-                f"Lush green pigmentation covering {int(green_ratio * 100)}% of analyzed area.",
-                "Uniform leaf texture with healthy cell turgor and no prominent lesions."
-            ]
-            causes = ["Adequate soil moisture and balanced vegetative nutrition."]
-            actions = [
-                "1. Maintain regular irrigation according to current crop growth stage.",
-                "2. Continue weekly prophylactic canopy scouting."
-            ]
-            guidance = "No chemical intervention needed. Crop is in good vegetative vigor."
-            fertilizer_link = False
-
-        return {
-            "image_type": category or "Leaf",
-            "crop_name": crop_name,
-            "species_variety": "Agricultural Crop",
-            "identification_confidence": crop_conf,
-            "health_status": health_status,
-            "condition": condition,
-            "condition_confidence": cond_conf,
-            "severity": severity,
-            "condition_type": "Agronomic Vision Analysis",
-            "visual_observations": obs,
-            "possible_causes": causes,
-            "recommended_actions": actions,
-            "warnings": [],
-            "prevention": "Maintain clean field sanitation and follow balanced stage-calibrated fertigation.",
-            "monitoring_plan": "Scout canopy twice weekly in the morning.",
-            "fertilizer_link": fertilizer_link,
-            "needs_field_verification": False,
-            "contact_expert": (severity == "High"),
-            "farmer_guidance": guidance,
-            "analysis_method": "Agronomic Computer Vision"
-        }
-
-    except Exception as e:
-        return {
-            "image_type": plant_part if plant_part not in ["Auto", "Auto Detect"] else "Leaf",
-            "crop_name": "Agricultural Plant",
-            "species_variety": "Field Crop",
-            "identification_confidence": 85.0,
-            "health_status": "Possible Issue",
-            "condition": "Foliar Stress",
-            "condition_confidence": 75.0,
-            "severity": "Low",
-            "condition_type": "General Crop Stress",
-            "visual_observations": ["Visual indicators suggest mild plant stress."],
-            "possible_causes": ["Environmental or minor nutrient factor."],
-            "recommended_actions": ["1. Inspect field canopy and test soil moisture.", "2. Maintain regular irrigation."],
-            "warnings": [],
-            "prevention": "Ensure good drainage and hygiene.",
-            "monitoring_plan": "Scout weekly.",
-            "fertilizer_link": False,
-            "needs_field_verification": True,
-            "contact_expert": False,
-            "farmer_guidance": "Observe foliage for next 3 days.",
-            "analysis_method": "Agronomic Computer Vision"
-        }
 
 def _format_gemini_single_result(ai_vision_res: Dict[str, Any], effective_part: str) -> Dict[str, Any]:
     raw_crop = ai_vision_res.get("crop_name") or ""
@@ -1194,20 +469,36 @@ def _format_gemini_single_result(ai_vision_res: Dict[str, Any], effective_part: 
     condition = str(ai_vision_res.get("condition") or "Healthy Produce")
     raw_ident_conf = ai_vision_res.get("identification_confidence")
     raw_cond_conf = ai_vision_res.get("condition_confidence")
-
     # Do not fabricate numerical confidence if Gemini does not provide one
-    ident_conf = round(float(raw_ident_conf), 1) if raw_ident_conf is not None else None
-    cond_conf = round(float(raw_cond_conf), 1) if raw_cond_conf is not None else None
+    f_ident = _safe_float(raw_ident_conf)
+    ident_conf = round(f_ident, 1) if f_ident is not None else None
+    f_cond = _safe_float(raw_cond_conf)
+    cond_conf = round(f_cond, 1) if f_cond is not None else None
 
-    # Determine status & validity
-    if not crop_name or crop_name.upper() in ["UNKNOWN", "NONE", "UNIDENTIFIED"]:
+    # Check for non-plant / machinery / unrelated objects
+    is_non_plant = (
+        ai_vision_res.get("is_plant") is False
+        or any(k in crop_name.lower() for k in ["tractor", "machinery", "equipment", "vehicle", "not a plant", "non-plant", "non-agricultural", "indoor", "animal", "person"])
+        or any(k in condition.lower() for k in ["mechanical equipment", "tractor asset", "not a plant", "non-agricultural"])
+    )
+
+    if is_non_plant:
+        status = "UNKNOWN"
+        crop_name = "UNKNOWN"
+        condition = "Non-Plant / Unrelated Object"
+        reason = "The uploaded image does not appear to contain a recognized crop, plant, leaf, or agricultural produce."
+        ident_conf = None
+        cond_conf = None
+    elif not crop_name or crop_name.upper() in ["UNKNOWN", "NONE", "UNIDENTIFIED"]:
         status = "UNKNOWN"
         crop_name = "UNKNOWN"
         condition = "Not Evaluated"
-        reason = "Gemini Vision could not confidently identify the crop or produce in the image."
+        reason = "Multimodal vision could not confidently identify the crop or produce in the image."
+        ident_conf = None
+        cond_conf = None
     elif ident_conf is not None and ident_conf < 65.0:
         status = "LOW_CONFIDENCE"
-        reason = f"Gemini Vision confidence ({ident_conf}%) is below the 65.0% threshold."
+        reason = f"Visual identification confidence ({ident_conf}%) is below the 65.0% threshold."
     else:
         status = "VALID_RESULT"
         reason = None
@@ -1426,97 +717,156 @@ def analyze_plant_image(
         else:
             effective_part = raw_part
 
-    # Critical Safeguard: If the image visually contains harvested tubers or root produce,
-    # NEVER route it to a foliar leaf-only model even if the user picked 'Leaf' or 'Whole plant'.
-    if detected_part == "Vegetable (Tuber)":
-        effective_part = "Vegetable (Tuber)"
-    elif detected_part.startswith("Vegetable") and effective_part in ["Leaf", "Whole plant"]:
+    # Respect user explicit plant part selection
+    if is_auto:
         effective_part = detected_part
-
-    # If verified crop is explicitly passed (e.g. Potato), align part
-    if verified_crop and "potato" in verified_crop.lower():
-        effective_part = "Vegetable (Tuber)"
 
     # 2. Plant-Part / Image-Type Routing & Multi-Engine Dispatch
     model_mgr = get_crop_health_model()
+    VALIDATED_MODEL_PARTS = {"Leaf", "Whole plant"}
 
-    # Validated vision model coverage in models/crop_health/:
-    # - MobileNetV2 models support foliar leaves ONLY (14 crops, 38 leaf pathologies).
-    VALIDATED_MODEL_PARTS = {"Leaf"}
+    target_crop_clean = (verified_crop or farm_crop or "").strip()
+    is_outside_cnn_classes = bool(
+        target_crop_clean and not any(target_crop_clean.lower() == sc.lower() for sc in model_mgr.crop_classes)
+    )
+
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
     if effective_part in VALIDATED_MODEL_PARTS and model_mgr.is_loaded:
-        # BRANCH 1: Leaf Images -> Validated Dual-Stage CNN Models (14 Crops, 38 Pathologies)
-        final_res = model_mgr.predict_image(image_path, plant_part=effective_part)
-        final_res["analysis_method"] = "CNN (Validated)"
-
-        # Crop Sanity Check: If CNN predicts Grape or other crop but farm is Potato or image has tubers,
-        # fallback to Agronomic Computer Vision
-        predicted_crop = str(final_res.get("crop_name", "")).lower()
-        target_crop_str = (farm_crop or verified_crop or "").lower()
-        is_plantation = any(c in target_crop_str for c in ["coffee", "pepper", "cardamom", "arecanut", "ginger", "turmeric"])
-        
-        if is_plantation or (farm_crop and "potato" in farm_crop.lower() and "grape" in predicted_crop) or detected_part == "Vegetable (Tuber)" or (final_res.get("status") == "LOW_CONFIDENCE" and target_crop_str):
-            cv_fallback = _heuristic_cv_plant_analyzer(
-                image_path,
-                plant_part=effective_part,
-                weather_data=weather_data,
-                farm_crop=farm_crop,
-                verified_crop=verified_crop
-            )
-            if cv_fallback:
-                final_res = cv_fallback
-    else:
-        # BRANCH 2: Non-Leaf Produce / Tubers / Whole Plants / Complex Scenes
-        target_crop_str = (farm_crop or verified_crop or "").lower()
-        is_plantation = any(c in target_crop_str for c in ["coffee", "pepper", "cardamom", "arecanut", "ginger", "turmeric"])
-
-        if is_plantation and verified_crop:
-            final_res = _heuristic_cv_plant_analyzer(
-                image_path,
-                plant_part=effective_part,
-                weather_data=weather_data,
-                farm_crop=farm_crop,
-                verified_crop=verified_crop
-            )
-            final_res["analysis_method"] = "Agronomic Knowledge Base"
-        else:
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if is_outside_cnn_classes:
+            # Crop is outside local 14-crop MobileNetV2 scope (e.g. Rice, Wheat, Cotton, Sugarcane)
             gemini_res = None
             if api_key:
                 gemini_res = call_gemini_vision(
                     [image_path],
                     plant_part_hint=effective_part,
                     weather_data=weather_data,
-                    crop_hint=verified_crop or farm_crop
+                    crop_hint=target_crop_clean
                 )
-
             if gemini_res:
                 final_res = _format_gemini_single_result(gemini_res, effective_part)
-                final_res["analysis_method"] = "Gemini Vision"
             else:
-                # High-Reliability Fallback: Agronomic Computer Vision Rule Engine (< 5ms)
-                final_res = _heuristic_cv_plant_analyzer(
-                    image_path,
-                    plant_part=effective_part,
+                final_res = {
+                    "status": "UNSUPPORTED",
+                    "analysis_status": "UNSUPPORTED",
+                    "identified_crop": target_crop_clean,
+                    "crop_name": target_crop_clean,
+                    "detected_crop": target_crop_clean,
+                    "crop": target_crop_clean,
+                    "crop_confidence": None,
+                    "confidence": None,
+                    "disease_confidence": None,
+                    "identification_confidence": None,
+                    "condition_confidence": None,
+                    "plant_part": effective_part,
+                    "image_type": effective_part,
+                    "disease": "Not Evaluated",
+                    "disease_name": "Unsupported Crop Category",
+                    "detected_problem": "Unsupported Crop Category",
+                    "condition": "Not Evaluated",
+                    "health_status": "Not Supported",
+                    "severity": "Unknown",
+                    "reason": f"Crop '{target_crop_clean}' is outside the 14 crops supported by the offline foliar model, and multimodal vision service is unavailable.",
+                    "message": f"Crop '{target_crop_clean}' is outside the 14 crops supported by the offline foliar model (PlantVillage benchmark), and multimodal vision service is unavailable.",
+                    "recommendation": f"Offline model supports Apple, Blueberry, Cherry, Corn (Maize), Grape, Orange, Peach, Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, and Tomato. Multimodal vision service is required for other crops.",
+                    "recommended_actions": ["Ensure network connectivity to Gemini Vision API for extended crop analysis."],
+                    "visual_observations": [f"Crop '{target_crop_clean}' cannot be evaluated offline."],
+                    "analysis_method": "Offline Scope Filter",
+                    "model_status": "Loaded",
+                    "needs_field_verification": True,
+                    "crop_verified": False,
+                    "top_predictions": []
+                }
+        else:
+            # Evaluate using validated MobileNetV2 leaf pipeline
+            final_res = model_mgr.predict_image(image_path, plant_part=effective_part)
+            final_res["analysis_method"] = "CNN (Validated)"
+
+            # Check user verification consistency
+            if target_crop_clean and final_res.get("status") == "VALID_RESULT":
+                cnn_crop = final_res.get("crop_name", "")
+                if cnn_crop.lower() == target_crop_clean.lower():
+                    final_res["crop_verified"] = True
+                else:
+                    final_res["crop_verified"] = False
+                    final_res.setdefault("warnings", []).append(
+                        f"User indicated '{target_crop_clean}', but visual classifier identified '{cnn_crop}' ({final_res.get('crop_confidence')}% confidence)."
+                    )
+
+            # If local CNN had low confidence, try Gemini Vision as escalation if available
+            if final_res.get("status") in ["LOW_CONFIDENCE", "UNKNOWN"] and api_key:
+                gemini_res = call_gemini_vision(
+                    [image_path],
+                    plant_part_hint=effective_part,
                     weather_data=weather_data,
-                    farm_crop=farm_crop,
-                    verified_crop=verified_crop
+                    crop_hint=target_crop_clean
                 )
-                final_res["analysis_method"] = "Agronomic Computer Vision"
+                if gemini_res:
+                    final_res = _format_gemini_single_result(gemini_res, effective_part)
+
+    else:
+        # Non-leaf plant part (Fruit, Vegetable/Tuber, Seed, Stem, Pest)
+        gemini_res = None
+        if api_key:
+            gemini_res = call_gemini_vision(
+                [image_path],
+                plant_part_hint=effective_part,
+                weather_data=weather_data,
+                crop_hint=verified_crop or farm_crop
+            )
+
+        if gemini_res:
+            final_res = _format_gemini_single_result(gemini_res, effective_part)
+            final_res["analysis_method"] = "Gemini Vision"
+        else:
+            # Vision service unavailable / unconfigured; offline CNN cannot evaluate non-leaf parts
+            cv_metrics = _extract_cv_image_metrics(image_path)
+            err_status = "SERVICE_UNAVAILABLE" if api_key else "UNSUPPORTED"
+            final_res = {
+                "status": err_status,
+                "analysis_status": err_status,
+                "identified_crop": "UNKNOWN",
+                "crop_name": "UNKNOWN",
+                "detected_crop": "Unknown",
+                "crop": "UNKNOWN",
+                "crop_confidence": None,
+                "confidence": None,
+                "disease_confidence": None,
+                "identification_confidence": None,
+                "condition_confidence": None,
+                "plant_part": effective_part,
+                "image_type": effective_part,
+                "disease": "Not Evaluated",
+                "disease_name": "Unsupported Plant Part",
+                "detected_problem": "Unsupported Plant Part",
+                "condition": "Not Evaluated",
+                "health_status": "Not Supported",
+                "severity": "Unknown",
+                "reason": f"Local MobileNetV2 models evaluate foliar leaves exclusively. Plant part '{effective_part}' requires multimodal vision analysis, which is currently unavailable.",
+                "message": f"Plant part '{effective_part}' is not supported by the offline foliar model. Multimodal vision service is required.",
+                "recommendation": f"Upload a clear leaf photo for the offline model, or ensure Gemini Vision service is active for {effective_part.lower()} diagnosis.",
+                "recommended_actions": ["Upload a clear foliar leaf photo under daylight."],
+                "visual_observations": [f"Input plant part '{effective_part}' is outside the offline leaf model scope."],
+                "analysis_method": "Offline Scope Filter",
+                "model_status": "Active",
+                "needs_field_verification": True,
+                "crop_verified": False,
+                "top_predictions": []
+            }
 
     # Extract core response attributes
     status = final_res.get("status") or final_res.get("analysis_status") or "VALID_RESULT"
     reason = final_res.get("reason")
-    identified_crop = final_res.get("identified_crop") or final_res.get("crop_name") or final_res.get("crop") or "UNKNOWN"
-    crop_conf = final_res.get("crop_confidence") or final_res.get("identification_confidence")
-    img_type = final_res.get("plant_part") or final_res.get("image_type") or effective_part
+    identified_crop = str(final_res.get("identified_crop") or final_res.get("crop_name") or final_res.get("crop") or "UNKNOWN")
+    crop_conf = _safe_float(final_res.get("crop_confidence") or final_res.get("identification_confidence"))
+    img_type = str(final_res.get("plant_part") or final_res.get("image_type") or effective_part)
     disease_raw = final_res.get("disease") or final_res.get("disease_name") or final_res.get("condition") or "Normal Condition"
     disease = str(disease_raw)
-    disease_conf = final_res.get("disease_confidence") or final_res.get("condition_confidence")
+    disease_conf = _safe_float(final_res.get("disease_confidence") or final_res.get("condition_confidence"))
     severity_raw = final_res.get("severity") or "Moderate"
     severity = str(severity_raw)
     analysis_status = status
-    confidence = final_res.get("confidence") or crop_conf
+    confidence = _safe_float(final_res.get("confidence") or crop_conf)
 
     if status == "UNSUPPORTED":
         message = final_res.get("message") or "No validated model is available for this plant part."
@@ -1591,22 +941,32 @@ def analyze_plant_image(
     farm_crop_lower = (farm_crop or "").lower().strip()
     verified_crop_lower = (verified_crop or "").lower().strip()
 
-    if verified_crop_lower and verified_crop_lower in effective_identified_lower:
-        crop_verified = True
-    elif farm_crop_lower and (farm_crop_lower in effective_identified_lower or effective_identified_lower in farm_crop_lower):
-        crop_verified = True
-    elif effective_identified_lower == "potato" and (detected_part == "Vegetable (Tuber)" or "tuber" in img_type.lower()):
-        crop_verified = True
-    elif final_res.get("crop_verified"):
-        crop_verified = True
-    elif final_res.get("analysis_method") == "Gemini Vision" and crop_conf and float(crop_conf) >= 85.0:
-        crop_verified = True
+    if status == "VALID_RESULT":
+        if verified_crop_lower:
+            # User provided a verified crop hint: only verify if the model prediction matches user hint
+            if verified_crop_lower in effective_identified_lower or effective_identified_lower in verified_crop_lower:
+                crop_verified = True
+            else:
+                crop_verified = False
+        elif farm_crop_lower and (farm_crop_lower in effective_identified_lower or effective_identified_lower in farm_crop_lower):
+            crop_verified = True
+        elif final_res.get("analysis_method") == "CNN (Validated)" and crop_conf is not None and crop_conf >= 80.0:
+            crop_verified = True
+        elif final_res.get("analysis_method") == "Gemini Vision" and crop_conf is not None and crop_conf >= 85.0 and effective_identified_lower not in ["unknown", "tractor", "equipment", "none"]:
+            crop_verified = True
 
     needs_verification = not crop_verified or status in ["LOW_CONFIDENCE", "UNSUPPORTED"]
 
-    # Provide suggested crops for one-tap verification
-    all_common_crops = ["Coffee", "Black Pepper", "Potato", "Tomato", "Grape", "Corn / Maize", "Ginger", "Cardamom", "Arecanut", "Carrot", "Apple"]
-    suggested_crops = [c for c in all_common_crops if c.lower() != effective_identified_lower][:6]
+    # Provide suggested crops for one-tap verification across all crop variants
+    all_common_crops = [
+        "Rice (Paddy)", "Wheat", "Cotton", "Sugarcane", "Banana",
+        "Onion", "Garlic", "Chilli", "Brinjal", "Groundnut",
+        "Mustard", "Sunflower", "Mango", "Citrus", "Coffee",
+        "Black Pepper", "Cardamom", "Arecanut", "Potato", "Tomato",
+        "Corn / Maize", "Ginger", "Carrot", "Apple", "Grape", "Tea",
+        "Papaya", "Pomegranate", "Watermelon", "Cucumber", "Okra", "Coconut"
+    ]
+    suggested_crops = [c for c in all_common_crops if c.lower() != effective_identified_lower][:8]
 
     # Build comprehensive result payload adhering to Requirement 8 and Architecture
     result_dict = {
@@ -1653,6 +1013,7 @@ def analyze_plant_image(
         "contact_expert": final_res.get("contact_expert", severity in ["High", "Critical"] or status == "LOW_CONFIDENCE"),
         "is_unclear": (status == "LOW_CONFIDENCE" or status == "UNSUPPORTED"),
         "analysis_method": str(final_res.get("analysis_method") or ("CNN (Validated)" if effective_part in VALIDATED_MODEL_PARTS else "Gemini Vision")),
+        "inference_method": str(final_res.get("analysis_method") or ("CNN (Validated)" if effective_part in VALIDATED_MODEL_PARTS else "Gemini Vision")),
         "model_status": "Two-Stage PyTorch ML Models Loaded & Ready" if model_mgr.is_loaded else "Online",
         "needs_field_verification": needs_verification,
         "crop_verified": crop_verified,

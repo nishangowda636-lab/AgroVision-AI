@@ -7,17 +7,73 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import re
+import urllib.parse
+
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_DB_PATH = os.path.join(BACKEND_DIR, "agrovision.db").replace("\\", "/")
 
+def normalize_database_url(raw_url: str) -> str:
+    """Safely normalizes and sanitizes PostgreSQL/SQLite connection URLs.
+    Handles surrounding quotes, psql CLI prefixes, env var assignment prefixes,
+    scheme conversions (postgres:// -> postgresql://), and password character encoding.
+    """
+    if not raw_url:
+        return ""
+    
+    url = raw_url.strip().strip("\"'").strip()
+    
+    # Strip psql CLI command prefix if accidentally pasted (e.g., psql 'postgresql://...')
+    if re.match(r"^psql(\.exe)?\s+", url, re.IGNORECASE):
+        url = re.sub(r"^psql(\.exe)?\s+", "", url, flags=re.IGNORECASE).strip().strip("\"'").strip()
+        
+    # Strip env assignment prefix if accidentally pasted (e.g., DATABASE_URL=postgresql://...)
+    if re.match(r"^(export\s+)?DATABASE_URL\s*=\s*", url, re.IGNORECASE):
+        url = re.sub(r"^(export\s+)?DATABASE_URL\s*=\s*", "", url, flags=re.IGNORECASE).strip().strip("\"'").strip()
+
+    # Normalize scheme
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    elif url.startswith("postgresql+psycopg://"):
+        url = "postgresql://" + url[len("postgresql+psycopg://"):]
+
+    # Parse credentials cleanly to percent-encode any special characters in password
+    if "://" in url:
+        scheme, remainder = url.split("://", 1)
+        query_part = ""
+        if "?" in remainder:
+            remainder, query_part = remainder.split("?", 1)
+            query_part = "?" + query_part
+            
+        if "@" in remainder:
+            userinfo, host_and_path = remainder.rsplit("@", 1)
+            if "/" in host_and_path:
+                host_part, db_part = host_and_path.split("/", 1)
+                path_part = "/" + db_part
+            else:
+                host_part = host_and_path
+                path_part = ""
+                
+            if ":" in userinfo:
+                username, password = userinfo.split(":", 1)
+                enc_user = urllib.parse.quote(urllib.parse.unquote(username), safe="")
+                enc_pw = urllib.parse.quote(urllib.parse.unquote(password), safe="")
+                userinfo = f"{enc_user}:{enc_pw}"
+            else:
+                userinfo = urllib.parse.quote(urllib.parse.unquote(userinfo), safe="")
+                
+            url = f"{scheme}://{userinfo}@{host_part}{path_part}{query_part}"
+
+    return url
+
 raw_db_url = os.getenv("DATABASE_URL")
-if raw_db_url and raw_db_url.strip() not in (
+normalized_url = normalize_database_url(raw_db_url) if raw_db_url else ""
+
+if normalized_url and normalized_url not in (
     "sqlite:///./agrovision.db",
     "sqlite:///agrovision.db",
 ):
-    DATABASE_URL: str = raw_db_url.strip()
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL: str = normalized_url
 elif os.getenv("VERCEL"):
     temp_db_path = os.path.join(tempfile.gettempdir(), "agrovision.db").replace("\\", "/")
     DATABASE_URL = f"sqlite:///{temp_db_path}"

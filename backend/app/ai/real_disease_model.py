@@ -874,10 +874,482 @@ AGRONOMIC_KNOWLEDGE_BASE: Dict[str, Dict[str, Any]] = {
         "monitoring_plan": "Monitor lower fronds for progressive golden-yellow discoloration.",
         "when_to_contact_expert": "Consult plantation research station (CPCRI) for certified root rejuvenation protocol.",
         "weather_consideration": "Symptoms aggravate during prolonged waterlogging and post-monsoon drought."
+    },
+
+    # 🌾 Rice / Paddy (Oryza sativa)
+    "Rice___healthy": {
+        "crop": "Rice (Paddy)",
+        "disease": "Healthy Rice Crop & Foliage",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Cereal Crop",
+        "visible_symptoms": "Lush emerald green tillers with uniform upright leaf blades, clean auricles, and no necrotic lesions or spotting.",
+        "possible_causes": "Optimal water depth (2–5 cm), balanced NPK split application, and healthy seedling establishment.",
+        "recommended_next_steps": "1. Maintain 2–5 cm standing water layer during tillering and panicle initiation.\n2. Apply scheduled top-dressing of Urea and MOP.\n3. Conduct weekly scouting along field bunds for early signs of leaf folder or blast.",
+        "prevention": "Adopt System of Rice Intensification (SRI) spacing, avoid excessive vegetative nitrogen, and ensure drainage breaks.",
+        "monitoring_plan": "Scout canopy and tiller bases twice weekly during vegetative stage.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Intermittent rain and high humidity (>90%) favor fungal blast; monitor weather alerts."
+    },
+    "Rice___Blast": {
+        "crop": "Rice (Paddy)",
+        "disease": "Rice Blast (Magnaporthe oryzae)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Spindle-shaped or eye-shaped lesions with grey/whitish centers and dark reddish-brown margins on leaf blades; neck rot at panicle emergence.",
+        "possible_causes": "Magnaporthe fungal spores multiplying during humid overcast days (>90% RH) with high nitrogen fertilization.",
+        "recommended_next_steps": "1. Spray Tricyclazole 75% WP @ 0.6 g/L or Isoprothiolane 40% EC @ 1.5 ml/L immediately.\n2. Temporarily suspend nitrogen (Urea) top-dressing until disease halts.\n3. Drain excess field water for 24–48 hours to reduce canopy microclimate moisture.",
+        "prevention": "Seed treatment with Carbendazim (2g/kg seed), use blast-tolerant varieties, and avoid excessive night dew stagnant fields.",
+        "monitoring_plan": "Daily check of upper leaf flush and panicle necks.",
+        "when_to_contact_expert": "If neck blast appears at heading stage affecting >5% of tillers.",
+        "weather_consideration": "Overcast drizzly weather (20–26°C, >90% RH) triggers rapid blast spore discharge."
+    },
+    "Rice___Bacterial_blight": {
+        "crop": "Rice (Paddy)",
+        "disease": "Bacterial Leaf Blight (Xanthomonas oryzae)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Bacterial Pathogen",
+        "visible_symptoms": "Water-soaked to yellowish-green stripes with wavy margins developing from leaf tips down the blade, turning straw-colored and dying prematurely.",
+        "possible_causes": "Xanthomonas bacterial infection favored by severe rainstorms, strong winds, and high nitrogen.",
+        "recommended_next_steps": "1. Spray Copper Oxychloride (2.5 g/L) combined with Streptocycline (0.1 g/L) or Plantomycin (1 g/L).\n2. Drain standing water and allow soil surface drying for 2 days.\n3. Apply extra potash (MOP @ 15 kg/acre) to strengthen cell walls.",
+        "prevention": "Grow resistant cultivars, avoid clipping seedling leaf tips during transplanting, and balance N:K ratio.",
+        "monitoring_plan": "Inspect leaf margins every 3 days during tillering.",
+        "when_to_contact_expert": "If kresek (seedling wilt phase) causes tiller death >10%.",
+        "weather_consideration": "Typhoon or stormy rain events spread bacteria rapidly across wounded foliage."
+    },
+    "Rice___Brown_spot": {
+        "crop": "Rice (Paddy)",
+        "disease": "Brown Spot (Bipolaris oryzae)",
+        "health_status": "Possible Issue",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Numerous round to oval dark brown spots with yellowish halos resembling sesame seeds scattered across leaf blades; infected grains develop black discolorations.",
+        "possible_causes": "Fungal sporulation in soils deficient in potassium, manganese, or experiencing nutrient and drought stress.",
+        "recommended_next_steps": "1. Spray Mancozeb 75% WP @ 2 g/L or Propiconazole 25% EC @ 1 ml/L.\n2. Correct soil fertility with balanced NPK plus Zinc Sulfate (10 kg/acre).\n3. Maintain consistent shallow water ponding to prevent root drought stress.",
+        "prevention": "Seed treatment with Thiram (2g/kg), soil organic manuring, and balanced silicon/potash nutrition.",
+        "monitoring_plan": "Scout middle canopy weekly during active vegetative tillering.",
+        "when_to_contact_expert": "If spots coalesce across >20% of flag leaf area.",
+        "weather_consideration": "High relative humidity (86–100%) and temperature (25–30°C) speed up lesion growth."
+    },
+    "Rice___Sheath_blight": {
+        "crop": "Rice (Paddy)",
+        "disease": "Sheath Blight (Rhizoctonia solani)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Greenish-grey oval or irregular water-soaked spots on leaf sheaths near water line; lesions expand, develop dark brown margins, and spread up to upper leaf blades.",
+        "possible_causes": "Rhizoctonia sclerotia floating in irrigation water, dense crop canopy, and high humidity (>95%).",
+        "recommended_next_steps": "1. Spray Hexaconazole 5% SC @ 2 ml/L or Validamycin 3% L @ 2.5 ml/L directing spray towards tiller bases.\n2. Thin dense planting patches and optimize spacing for bottom aeration.\n3. Avoid excess urea application.",
+        "prevention": "Remove weed hosts from bunds; avoid high seedling transplanting density.",
+        "monitoring_plan": "Check lower sheath collars weekly at waterline.",
+        "when_to_contact_expert": "If lesions reach third leaf below the panicle.",
+        "weather_consideration": "Warm humid microclimate inside dense canopies accelerates upward mycelial climb."
+    },
+
+    # 🌾 Wheat (Triticum aestivum)
+    "Wheat___healthy": {
+        "crop": "Wheat",
+        "disease": "Healthy Wheat Crop",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Cereal Crop",
+        "visible_symptoms": "Uniform deep green erect leaves with healthy tillers, clean leaf sheaths, and robust emerging ears/spikes.",
+        "possible_causes": "Proper seed-bed preparation, optimal sowing depth, and timely crown root irrigation.",
+        "recommended_next_steps": "1. Maintain scheduled irrigation at Critical Root Initiation (CRI) and boot stages.\n2. Apply split dose of nitrogenous fertilizer.\n3. Scout for early aphid or rust pustules.",
+        "prevention": "Use certified rust-resistant wheat seed and follow zero-till or optimal row spacing (20–22.5 cm).",
+        "monitoring_plan": "Inspect wheat canopy every 4–5 days during vegetative and heading stages.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Cool night temperatures (10–15°C) with morning dew are normal; watch for yellow rust if fog persists."
+    },
+    "Wheat___Rust": {
+        "crop": "Wheat",
+        "disease": "Wheat Rust / Stripe Rust (Puccinia striiformis)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Bright yellow to orange-yellow powdery pustules arranged in narrow linear stripes along leaf veins; leaves wither and dry prematurely.",
+        "possible_causes": "Wind-borne Puccinia urediniospores spreading under cool temperatures (10–18°C) and persistent fog/dew.",
+        "recommended_next_steps": "1. Spray Propiconazole 25% EC (Tilt @ 1 ml/L) or Tebuconazole 25.9% EC (1 ml/L) immediately upon noticing initial focus spots.\n2. Ensure thorough spray coverage of upper foliage and flag leaves.\n3. Repeat spray after 12–15 days if weather remains overcast and cool.",
+        "prevention": "Plant resistant varieties (e.g., HD-2967, HD-3086), practice timely sowing in November.",
+        "monitoring_plan": "Scout field weekly, looking closely for yellow dust on fingertips after touching foliage.",
+        "when_to_contact_expert": "If stripe rust foci expand across >5% of the field area.",
+        "weather_consideration": "Cool humid foggy weather in northern wheat belts strongly accelerates stripe rust."
+    },
+    "Wheat___Powdery_mildew": {
+        "crop": "Wheat",
+        "disease": "Wheat Powdery Mildew (Blumeria graminis f. sp. tritici)",
+        "health_status": "Possible Issue",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "White to light grey cottony or talcum-powder-like patches on upper surface of leaves, leaf sheaths, and ears, turning dull grey with small black cleistothecia.",
+        "possible_causes": "Dense vegetative canopy, excessive nitrogen, and dry soil with high atmospheric humidity.",
+        "recommended_next_steps": "1. Spray Carbendazim 50% WP @ 1 g/L or Wettable Sulfur 80% WP @ 2.5 g/L.\n2. Regulate irrigation and improve field airflow.\n3. Avoid late nitrogen top-dressing.",
+        "prevention": "Optimum seed rate to prevent over-dense tillering, balanced phosphorus-potash fertilization.",
+        "monitoring_plan": "Inspect lower canopy leaves every 5 days during stem elongation.",
+        "when_to_contact_expert": "If powdery patches climb to flag leaves during earhead emergence.",
+        "weather_consideration": "High relative humidity (85–100%) at 15–22°C promotes conidial germination."
+    },
+
+    # 🌱 Cotton (Gossypium hirsutum)
+    "Cotton___healthy": {
+        "crop": "Cotton",
+        "disease": "Healthy Cotton Foliage & Squares",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Cash Crop",
+        "visible_symptoms": "Broad dark green palmate leaves with healthy red-free margins, sturdy main stem, and actively developing flower squares.",
+        "possible_causes": "Deep well-drained loamy soil, balanced basal NPK, and timely sucking pest management.",
+        "recommended_next_steps": "1. Maintain drip fertigation and apply 1% 19:19:19 spray at squaring stage.\n2. Inspect squares and bolls for bollworm or pink bollworm entry pinholes.\n3. Keep field free of broadleaf weed hosts.",
+        "prevention": "Install yellow sticky traps and pheromone traps (5 traps/acre) for monitoring.",
+        "monitoring_plan": "Scout canopy twice weekly during square and boll formation.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Warm sunny days (28–34°C) promote rapid vegetative and sympodial growth."
+    },
+    "Cotton___Bacterial_blight": {
+        "crop": "Cotton",
+        "disease": "Bacterial Blight / Angular Leaf Spot (Xanthomonas citri pv. malvacearum)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Bacterial Pathogen",
+        "visible_symptoms": "Angular water-soaked spots bounded by leaf veinlets, turning reddish-brown to black; black lesions on petioles (blackarm) and water-soaked round spots on bolls.",
+        "possible_causes": "Bacterial inoculum carried in seed or crop debris, activated by warm humid rains (25–30°C, >85% RH).",
+        "recommended_next_steps": "1. Spray Copper Oxychloride 50% WP (2.5 g/L) + Streptocycline (0.1 g/L) twice at 10-day intervals.\n2. Remove heavily infected lower leaves and burn plant refuse after harvest.\n3. Avoid furrow waterlogging.",
+        "prevention": "Acid delinting of cotton seed followed by seed dressing with Carboxin + Thiram.",
+        "monitoring_plan": "Inspect lower leaves and branches every 4 days after heavy rainfall.",
+        "when_to_contact_expert": "If blackarm stem cankers cause branch snapping.",
+        "weather_consideration": "Wind-driven heavy rains facilitate bacterial dispersion through stomatal openings."
+    },
+    "Cotton___Leaf_curl": {
+        "crop": "Cotton",
+        "disease": "Cotton Leaf Curl Virus (CLCuV)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Viral Pathogen",
+        "visible_symptoms": "Upward or downward curling of leaf margins with vein thickening, leaf enations (cup-shaped outgrowths) on underside of veins, and severe plant stunting.",
+        "possible_causes": "Gemini virus transmitted exclusively by whitefly (Bemisia tabaci) vectors feeding on foliage.",
+        "recommended_next_steps": "1. Spray Diafenthiuron 50% WP @ 1.2 g/L or Pyriproxyfen 10% EC @ 2 ml/L to suppress whitefly population.\n2. Rogue out severely stunted virus-infected plants early in the season.\n3. Spray 2% Potassium Nitrate (KNO3) to help mild plants sustain yield.",
+        "prevention": "Grow CLCuV-tolerant Bt cotton hybrids; avoid planting near okra or cucurbit host crops.",
+        "monitoring_plan": "Monitor whitefly nymph counts on undersides of 3 leaves per plant weekly.",
+        "when_to_contact_expert": "If leaf curl incidence exceeds 15% before flowering.",
+        "weather_consideration": "Hot dry weather (32–38°C) boosts whitefly reproductive rate."
+    },
+
+    # 🎋 Sugarcane (Saccharum officinarum)
+    "Sugarcane___healthy": {
+        "crop": "Sugarcane",
+        "disease": "Healthy Sugarcane Stalks & Canopy",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Cash Crop",
+        "visible_symptoms": "Sturdy thick cane stalks with lustrous green leaf canopy, healthy dewlap collars, and firm node internodes.",
+        "possible_causes": "Quality disease-free setts, deep furrow irrigation, and optimal soil potash levels.",
+        "recommended_next_steps": "1. Continue scheduled furrow or subsurface drip irrigation.\n2. Perform timely earthing up (ridging) to support tillers and suppress weeds.\n3. Trash mulch between rows to conserve soil moisture.",
+        "prevention": "Use hot water treated (50°C for 2 hrs) seed setts and clean harvesting sickles.",
+        "monitoring_plan": "Inspect field rows fortnightly for shoot borer or leaf discolouration.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "High solar radiation with warm temperatures (27–35°C) promotes rapid sucrose synthesis."
+    },
+    "Sugarcane___Red_rot": {
+        "crop": "Sugarcane",
+        "disease": "Red Rot (Colletotrichum falcatum)",
+        "health_status": "Critical",
+        "severity": "Critical",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Third or fourth leaf from top shows yellowing and withering; split cane reveals internal reddening of pith with characteristic transverse white patches and sour alcoholic smell.",
+        "possible_causes": "Soil-borne and sett-borne fungal spores spreading via irrigation channels and infected planting material.",
+        "recommended_next_steps": "1. Immediately uproot and burn infected clumps with entire root system.\n2. Discontinue ratooning of the infected plot.\n3. Drench the infected spots with Carbendazim 50% WP (1 g/L) and isolate irrigation drainage.",
+        "prevention": "Plant certified red-rot resistant varieties (e.g., Co 0238 alternatives), dip setts in Carbendazim before planting.",
+        "monitoring_plan": "Scout cane rows monthly, inspecting crown leaf color for sudden yellow flags.",
+        "when_to_contact_expert": "Immediate alert: Red rot is an epidemic quarantine threat to sugarcane mills.",
+        "weather_consideration": "Waterlogging during monsoon months greatly accelerates sett and root infection."
+    },
+
+    # 🍌 Banana (Musa acuminata)
+    "Banana___healthy": {
+        "crop": "Banana",
+        "disease": "Healthy Banana Plant & Foliage",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Fruit Crop",
+        "visible_symptoms": "Broad, lustrous deep green paddle-shaped leaves with intact midribs, sturdy pseudostem, and healthy emerging heart leaf.",
+        "possible_causes": "Adequate potassium nutrition, balanced basin irrigation, and disease-free tissue culture suckers.",
+        "recommended_next_steps": "1. Maintain consistent basin or drip irrigation (15–20 L/plant/day).\n2. Apply split dose of Potash (MOP) to support bunch filling.\n3. Prune dry bottom leaves and desucker leaving one follower per mat.",
+        "prevention": "Use virus-indexed tissue culture plants and maintain clean drainage ditches.",
+        "monitoring_plan": "Inspect foliage and pseudostem bases weekly.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "High wind velocities can cause leaf shredding; erect windbreaks around plantation."
+    },
+    "Banana___Sigatoka_leaf_spot": {
+        "crop": "Banana",
+        "disease": "Black / Yellow Sigatoka (Pseudocercospora fijiensis / musae)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Narrow reddish-brown streaks parallel to leaf veins, expanding into elliptical dark brown to black spots with sunken grey centers and bright yellow halos; leaves dry and scorch prematurely.",
+        "possible_causes": "High humidity (>85%), warm temperatures (25–28°C), and water film on leaves enabling fungal ascospores to infect.",
+        "recommended_next_steps": "1. Spray Propiconazole 25% EC (1 ml/L) or Carbendazim (1 g/L) mixed with mineral oil (10 ml/L) as sticker.\n2. De-leaf (prune and safely burn) heavily spotted leaves carrying >50% necrotic area.\n3. Improve plantation airflow through de-suckering and weed control.",
+        "prevention": "Maintain clean drainage, avoid overhead sprinkler wetting, and cultivate Sigatoka-tolerant cultivars.",
+        "monitoring_plan": "Inspect youngest fully unfurled leaves every 7 days.",
+        "when_to_contact_expert": "If functional green leaf count drops below 8 leaves at bunch emergence.",
+        "weather_consideration": "Rainy spells with prolonged leaf wetness drive rapid Sigatoka cycle (14–20 days)."
+    },
+    "Banana___Panama_wilt": {
+        "crop": "Banana",
+        "disease": "Panama Disease / Fusarium Wilt (Fusarium oxysporum f. sp. cubense)",
+        "health_status": "Critical",
+        "severity": "Critical",
+        "condition_type": "Soil-borne Fungal Pathogen",
+        "visible_symptoms": "Yellowing of lower leaf margins progressing inward; leaves collapse at petiole base forming a 'skirt' of dead foliage around pseudostem; vascular splitting and dark reddish-brown discoloration inside rhizome and stem.",
+        "possible_causes": "Fusarium chlamydospores persisting in soil for decades, invading through root wounds in poorly drained or nematode-infested soils.",
+        "recommended_next_steps": "1. Immediately isolate infected mat; uproot and burn plant on site without moving soil.\n2. Drench surrounding basin (radius 1.5 m) with Carbendazim (2 g/L) or apply Trichoderma viride enriched bio-compost.\n3. Sterilize all farm tools before moving to healthy mats.",
+        "prevention": "Plant resistant cultivars (Cavendish against Race 1), maintain soil pH around 6.5–7.0 with lime.",
+        "monitoring_plan": "Scout plantation weekly for unseasonable leaf collapse.",
+        "when_to_contact_expert": "Immediate reporting to local agricultural extension; avoid spreading soil.",
+        "weather_consideration": "Waterlogging stresses roots and accelerates Fusarium vascular colonization."
+    },
+
+    # 🧅 Onion & Garlic (Allium cepa / sativum)
+    "Onion___healthy": {
+        "crop": "Onion",
+        "disease": "Healthy Onion Crop & Bulbs",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Allium Crop",
+        "visible_symptoms": "Erect, glaucous tubular green leaves with waxy bloom, clean bulb neck, and firm developing bulb scales free of rot.",
+        "possible_causes": "Raised bed cultivation, optimal sulfur and potassium nutrition, and regulated irrigation.",
+        "recommended_next_steps": "1. Maintain raised bed irrigation intervals allowing topsoil aeration between waterings.\n2. Apply sulfur fertilizer (Bentonite sulfur @ 10 kg/acre) to enhance pungency and shelf life.\n3. Withhold irrigation 10–14 days before harvest to initiate neck fall and curing.",
+        "prevention": "Crop rotation with non-allium crops, seed treatment with Trichoderma, and well-rotted manure.",
+        "monitoring_plan": "Inspect leaf axils weekly for thrips or fungal spots.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Moderate temperatures (18–26°C) promote ideal bulb swelling."
+    },
+    "Onion___Purple_blotch": {
+        "crop": "Onion",
+        "disease": "Purple Blotch (Alternaria porri)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Small water-soaked lesions on leaves and seed stalks that turn purplish-brown with yellow margins; lesions enlarge into sunken concentric rings causing leaves to snap and dry.",
+        "possible_causes": "Alternaria spores carried by wind and rain splash, thriving under warm humid conditions (25–30°C, >80% RH).",
+        "recommended_next_steps": "1. Spray Mancozeb 75% WP @ 2.5 g/L or Tebuconazole + Trifloxystrobin @ 1 g/L with non-ionic sticker (0.5 ml/L).\n2. Avoid sprinkler irrigation; switch to ground furrow or drip.\n3. Repeat spray in 10–12 days if wet weather continues.",
+        "prevention": "Seed treatment with Thiram (2g/kg), 3-year crop rotation, and destruction of crop residues.",
+        "monitoring_plan": "Scout middle leaves twice weekly during active bulbing stage.",
+        "when_to_contact_expert": "If lesions affect seed stalks in onion seed crops.",
+        "weather_consideration": "Dew formation lasting >8 hours coupled with warm days enables severe spore germination."
+    },
+    "Onion___Basal_rot": {
+        "crop": "Onion",
+        "disease": "Basal Rot (Fusarium oxysporum f. sp. cepae)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Soil-borne Fungal Pathogen",
+        "visible_symptoms": "Yellowing and dying-back of leaves from tips downwards; roots turn pinkish-brown to dark brown and rot away; basal plate of bulb softens with white mycelial growth.",
+        "possible_causes": "Soil-borne Fusarium entering through root wounds or onion maggot injuries in warm (25–32°C) poorly drained soils.",
+        "recommended_next_steps": "1. Uproot and safely dispose of infected bulbs away from field.\n2. Drench root zones with Carbendazim (1 g/L) or Copper Oxychloride (2.5 g/L).\n3. Avoid excess nitrogen and maintain clean drainage in beds.",
+        "prevention": "Soil application of Trichoderma viride with FYM, 4-year crop rotation without alliums.",
+        "monitoring_plan": "Check yellowing plants for loose root anchorage.",
+        "when_to_contact_expert": "If post-harvest storage rot exceeds 10% of stored lot.",
+        "weather_consideration": "Warm wet soils at bulb maturity promote aggressive basal plate decay."
+    },
+
+    # 🌶️ Chilli & Capsicum (Capsicum annuum)
+    "Chilli___healthy": {
+        "crop": "Chilli",
+        "disease": "Healthy Chilli Foliage & Fruit",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Solanaceous Crop",
+        "visible_symptoms": "Vibrant emerald green leaves with flat uncurled blades, profuse white flowers, and glossy firm fruits with no blemishes or spots.",
+        "possible_causes": "Raised bed planting, drip fertigation with calcium/boron, and active sucking pest prevention.",
+        "recommended_next_steps": "1. Apply foliar spray of Chelated Calcium + Boron (1.5 ml/L) to prevent blossom-end rot.\n2. Maintain consistent root zone moisture avoiding drought-flood cycles.\n3. Erect blue and yellow sticky traps (10 traps/acre) for thrips and whitefly scouting.",
+        "prevention": "Seed treatment with Imidacloprid, barrier crops of maize/sorghum around border to intercept viral vectors.",
+        "monitoring_plan": "Inspect young terminal leaves and flowers twice weekly.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Warm days (24–30°C) with moderate RH favor high flowering and fruit set."
+    },
+    "Chilli___Anthracnose": {
+        "crop": "Chilli",
+        "disease": "Anthracnose / Fruit Rot / Dieback (Colletotrichum capsici)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Circular sunken necrotic spots with concentric rings of black acervuli on ripe fruits; tender twigs show dieback drying from tips downward with straw-colored bark.",
+        "possible_causes": "Colletotrichum fungal spores spreading via rain splashes during warm humid periods (26–30°C, >80% RH).",
+        "recommended_next_steps": "1. Spray Azoxystrobin 23% SC @ 1 ml/L or Difenoconazole 25% EC @ 1 ml/L on entire canopy and fruit clusters.\n2. Promptly remove and destroy mummified fruits and dead twigs.\n3. Avoid overhead irrigation and harvest ripe fruits without delay.",
+        "prevention": "Seed treatment with Captan or Carbendazim (2g/kg seed), avoid excessive vegetative shade.",
+        "monitoring_plan": "Scout fruit clusters every 3 days during ripening stage.",
+        "when_to_contact_expert": "If dieback affects >15% of branches or ripe fruit rot causes commercial loss.",
+        "weather_consideration": "Heavy rains at fruit ripening stage trigger devastating fruit rot outbreaks."
+    },
+    "Chilli___Leaf_curl": {
+        "crop": "Chilli",
+        "disease": "Chilli Leaf Curl Virus (ChiLCV) & Mite Infestation",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Viral & Vector Complex",
+        "visible_symptoms": "Severe upward curling of leaves with puckering and stunted internodes (thrips/virus) or downward inverted boat-shaped curling with elongated petioles (yellow mites).",
+        "possible_causes": "Begomovirus transmitted by whitefly (Bemisia tabaci) or leaf feeding by yellow mites (Polyphagotarsonemus latus) and thrips.",
+        "recommended_next_steps": "1. For downward curling (mites): Spray Spiromesifen 22.9% SC @ 1 ml/L or Propargite 57% EC @ 2 ml/L.\n2. For upward curling (thrips/whitefly/virus): Spray Fipronil 5% SC @ 1.5 ml/L or Acetamiprid 20% SP @ 0.5 g/L.\n3. Uproot and burn severely stunted virus-infected plants to reduce vector reservoir.",
+        "prevention": "Sow 3 rows of maize/sorghum as border crop, install yellow and blue sticky traps early.",
+        "monitoring_plan": "Examine underside of top tender leaves with 10x hand lens twice weekly.",
+        "when_to_contact_expert": "If leaf curl symptoms spread to >20% of plants before flowering.",
+        "weather_consideration": "Dry hot spells favor rampant thrips and mite multiplication."
+    },
+
+    # 🍆 Brinjal / Eggplant (Solanum melongena)
+    "Brinjal___healthy": {
+        "crop": "Brinjal (Eggplant)",
+        "disease": "Healthy Brinjal Canopy & Fruit",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Solanaceous Crop",
+        "visible_symptoms": "Large broad pubescent leaves with deep green color, sturdy branching, violet flowers, and lustrous firm fruit with intact calyx.",
+        "possible_causes": "Rich organic soil, balanced NPK fertigation, and proactive shoot/fruit borer monitoring.",
+        "recommended_next_steps": "1. Maintain regular drip irrigation and apply potassium nitrate (13:0:45 @ 5g/L) during fruit enlargement.\n2. Install pheromone traps (Lucin-lure @ 5 traps/acre) for shoot and fruit borer.\n3. Prune old senescent bottom leaves.",
+        "prevention": "Deep summer ploughing, crop rotation, and seedling dip in Imidacloprid before transplanting.",
+        "monitoring_plan": "Inspect shoots and fruits every 3–4 days.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Warm weather (25–32°C) is ideal for continuous flowering and fruit bulking."
+    },
+    "Brinjal___Little_leaf": {
+        "crop": "Brinjal (Eggplant)",
+        "disease": "Little Leaf Disease (Phytoplasma)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Phytoplasma Pathogen",
+        "visible_symptoms": "Severe reduction in leaf size giving a bushy, rosette-like appearance; leaves become narrow, pale green, and phyllody occurs (floral parts turn into green leafy structures); no fruit set.",
+        "possible_causes": "Phytoplasma transmitted by leafhopper vector (Hishimonus phycitis) feeding on foliage.",
+        "recommended_next_steps": "1. Strictly rogue out and burn all affected bushy plants immediately.\n2. Spray Dimethoate 30% EC (2 ml/L) or Imidacloprid 17.8% SL (0.5 ml/L) on adjacent crop to control leafhoppers.\n3. Weed solanaceous alternate hosts around field edges.",
+        "prevention": "Dip seedling roots in Tetracycline solution (500 ppm) for 15 mins before transplanting.",
+        "monitoring_plan": "Check plant crowns weekly for leaf miniaturization.",
+        "when_to_contact_expert": "If more than 5% of plants show little leaf rosetting.",
+        "weather_consideration": "Leafhopper migration peaks in warm dry intervals."
+    },
+
+    # 🥜 Groundnut / Peanut (Arachis hypogaea)
+    "Groundnut___healthy": {
+        "crop": "Groundnut (Peanut)",
+        "disease": "Healthy Groundnut Foliage & Pegs",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Legume Crop",
+        "visible_symptoms": "Four-foliolate deep green leaves with crisp margins, healthy yellow papilionaceous flowers, and vigorous peg entry into sandy loam soil.",
+        "possible_causes": "Rhizobium inoculation, adequate gypsum (calcium/sulfur) top-dressing, and weed-free peg zone.",
+        "recommended_next_steps": "1. Apply Gypsum @ 200 kg/acre at 40–45 days after sowing (peak flowering/pegging).\n2. Avoid soil disturbance once pegs start entering the soil.\n3. Maintain light sprinkler irrigation to keep top 5 cm soil friable.",
+        "prevention": "Seed treatment with Rhizobium and Trichoderma, balanced phosphorus nutrition.",
+        "monitoring_plan": "Inspect lower leaves weekly for early leaf spots.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Warm sunny days (27–33°C) facilitate profuse flowering and peg development."
+    },
+    "Groundnut___Tikka_leaf_spot": {
+        "crop": "Groundnut (Peanut)",
+        "disease": "Tikka Leaf Spot / Cercospora (Cercospora arachidicola & personata)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Early stage: circular reddish-brown spots with prominent bright yellow halos on upper leaf surface. Late stage: circular black spots without yellow halos on lower surface; severe premature leaf shedding.",
+        "possible_causes": "Cercospora fungal spores surviving in crop debris, spreading rapidly in warm humid weather (25–30°C, >85% RH).",
+        "recommended_next_steps": "1. Spray Tebuconazole 25.9% EC @ 1.5 ml/L or Chlorothalonil 75% WP @ 2 g/L.\n2. Repeat spray after 14 days if defoliation continues.\n3. Avoid overhead splashing irrigation.",
+        "prevention": "Seed dressing with Carbendazim (2g/kg), destruction of previous crop haulms.",
+        "monitoring_plan": "Scout bottom leaves starting 35 days after sowing.",
+        "when_to_contact_expert": "If defoliation exceeds 25% of canopy during pod filling stage.",
+        "weather_consideration": "Prolonged leaf wetness from morning dew accelerates Tikka infection."
+    },
+
+    # 🥭 Mango (Mangifera indica)
+    "Mango___healthy": {
+        "crop": "Mango",
+        "disease": "Healthy Mango Foliage & Panicles",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Fruit Crop",
+        "visible_symptoms": "Glossy dark green lanceolate mature leaves, healthy copper-red new flush, robust terminal panicles, and clean unblemished developing fruitlets.",
+        "possible_causes": "Orchard sanitation, post-harvest canopy pruning, and balanced micronutrient management.",
+        "recommended_next_steps": "1. Maintain scheduled basin irrigation during fruit enlargement.\n2. Spray 1% Potassium Nitrate (13:0:45) to enhance fruit size and reduce fruit drop.\n3. Monitor flowering panicles for hopper and powdery mildew activity.",
+        "prevention": "Prune overlapping branches after harvest to allow 360° sunlight penetration.",
+        "monitoring_plan": "Inspect blossoms and new vegetative flushes fortnightly.",
+        "when_to_contact_expert": "No action needed. Healthy orchard.",
+        "weather_consideration": "Dry weather during flowering is ideal; cloudy foggy mornings increase disease pressure."
+    },
+    "Mango___Anthracnose": {
+        "crop": "Mango",
+        "disease": "Mango Anthracnose (Colletotrichum gloeosporioides)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Fungal Pathogen",
+        "visible_symptoms": "Black necrotic spots with irregular margins on leaves, blighting of blossom panicles causing blossom drop; black tear-staining and sunken rotting spots on developing and ripe fruits.",
+        "possible_causes": "Colletotrichum fungal spores favored by intermittent rains, heavy dew, and cloudy weather during flowering and fruit set.",
+        "recommended_next_steps": "1. Spray Carbendazim 50% WP @ 1 g/L or Azoxystrobin 23% SC @ 1 ml/L on entire canopy and fruit clusters.\n2. Prune and burn blighted twigs and dried mummified fruitlets.\n3. Dip harvested fruits in warm water (52°C) for 5 minutes for post-harvest decay prevention.",
+        "prevention": "Apply protective Copper Oxychloride (2.5 g/L) before flowering and after harvest pruning.",
+        "monitoring_plan": "Inspect panicles and young fruitlets weekly after rainfall.",
+        "when_to_contact_expert": "If blossom blight causes more than 20% panicle drop.",
+        "weather_consideration": "Continuous rainfall and overcast days during blossom period cause catastrophic panicle blast."
+    },
+
+    # 🍋 Citrus (Lemon, Lime, Sweet Orange, Mandarin)
+    "Citrus___healthy": {
+        "crop": "Citrus",
+        "disease": "Healthy Citrus Foliage & Fruit",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Fruit Crop",
+        "visible_symptoms": "Dark green glossy winged petiole leaves, clean green twigs, fragrant white blossoms, and firm developing fruits with smooth rind oil glands.",
+        "possible_causes": "Well-drained soil, zinc/iron micronutrient sprays, and regular pruning of dead water shoots.",
+        "recommended_next_steps": "1. Apply zinc sulfate (0.5%) + ferrous sulfate (0.5%) foliar spray to keep foliage dark green.\n2. Maintain basin drainage away from trunk collar (double ring irrigation).\n3. Scout for citrus leaf miner on new flush leaves.",
+        "prevention": "Paint tree trunks with Bordeaux paste (1:1:10) up to 60 cm height before monsoon.",
+        "monitoring_plan": "Check new vegetative flushes and fruit rinds fortnightly.",
+        "when_to_contact_expert": "No action needed. Healthy citrus tree.",
+        "weather_consideration": "Citrus prefers sunny warm days with well-regulated root moisture."
+    },
+    "Citrus___Canker": {
+        "crop": "Citrus",
+        "disease": "Citrus Canker (Xanthomonas citri pv. citri)",
+        "health_status": "High Risk",
+        "severity": "High",
+        "condition_type": "Bacterial Pathogen",
+        "visible_symptoms": "Raised, corky, rough brownish lesions with crater-like centers and yellow chlorotic halos on leaves, twigs, and fruits; fruit rind shows disfiguring scabby pustules.",
+        "possible_causes": "Bacterial infection exacerbated by leaf miner wounds, rain splash, and warm temperatures (25–35°C).",
+        "recommended_next_steps": "1. Spray Copper Oxychloride 50% WP (2.5 g/L) + Streptocycline (0.1 g/L) at 15-day intervals.\n2. Control leaf miner with Imidacloprid (0.5 ml/L) on new flush leaves to prevent entry wounds.\n3. Prune and burn severely cankered twigs before spring flush.",
+        "prevention": "Erect windbreak trees, plant certified canker-free nursery stock, avoid overhead wetting.",
+        "monitoring_plan": "Inspect new flushes and developing fruitlets every 7 days.",
+        "when_to_contact_expert": "If canker lesions cover >15% of developing fruit surface.",
+        "weather_consideration": "Stormy wind-driven rain drastically spreads bacteria across the orchard."
+    },
+
+    # 🌻 Mustard & Sunflower (Brassica / Helianthus)
+    "Mustard___healthy": {
+        "crop": "Mustard",
+        "disease": "Healthy Mustard Foliage & Siliquae",
+        "health_status": "Healthy",
+        "severity": "Low (Healthy)",
+        "condition_type": "Healthy Oilseed Crop",
+        "visible_symptoms": "Lush green lyrate-pinnatifid leaves, bright yellow tetramerous flowers, and straight plump green siliquae pods packed with healthy seeds.",
+        "possible_causes": "Timely October sowing, sulfur fertilization, and clean weed-free crop stand.",
+        "recommended_next_steps": "1. Apply light irrigation at flowering and siliqua development stage.\n2. Scout for mustard aphid clusters on flowering twigs.\n3. Apply sulfur top-dressing to increase oil content.",
+        "prevention": "Seed treatment with Apron 35 SD, timely sowing to escape aphid and white rust peaks.",
+        "monitoring_plan": "Inspect terminal branches and flower buds every 4 days.",
+        "when_to_contact_expert": "No action needed. Healthy crop.",
+        "weather_consideration": "Bright sunny days with cool nights (10–15°C) maximize oil accumulation."
+    },
+    "Mustard___White_rust": {
+        "crop": "Mustard",
+        "disease": "White Rust / Blister (Albugo candida)",
+        "health_status": "High Risk",
+        "severity": "Moderate",
+        "condition_type": "Oomycete Pathogen",
+        "visible_symptoms": "Prominent chalky-white or creamy pustules (blisters) on underside of leaves; floral parts hypertrophy and swell into distorted stag-head structures, rendering plants sterile.",
+        "possible_causes": "Soil-borne oospores and wind-borne sporangia thriving in cool moist weather (12–18°C, >80% RH).",
+        "recommended_next_steps": "1. Spray Metalaxyl 8% + Mancozeb 64% WP (Ridomil @ 2 g/L) or Copper Oxychloride (2.5 g/L).\n2. Clip and burn staghead floral malformations immediately.\n3. Avoid excess irrigation and nitrogen.",
+        "prevention": "Seed treatment with Metalaxyl (6g/kg seed), crop rotation with non-crucifers.",
+        "monitoring_plan": "Scout lower leaves and inflorescence weekly during flowering.",
+        "when_to_contact_expert": "If stag-head floral distortion affects >5% of plants.",
+        "weather_consideration": "Persistent fog and morning dew in winter months drive heavy Albugo sporulation."
     }
 }
 
-# Crop name to disease class prefix mapping
+# Crop name to disease class prefix mapping (14 validated PlantVillage classes)
 CROP_TO_DISEASE_PREFIX = {
     "Apple": "Apple___",
     "Blueberry": "Blueberry___",
@@ -892,17 +1364,10 @@ CROP_TO_DISEASE_PREFIX = {
     "Soybean": "Soybean___",
     "Squash": "Squash___",
     "Strawberry": "Strawberry___",
-    "Tomato": "Tomato___",
-    # Plantation & Spices Crops
-    "Coffee": "Coffee___",
-    "Black Pepper": "Pepper___",
-    "Cardamom": "Cardamom___",
-    "Arecanut": "Arecanut___",
-    "Ginger": "Ginger___",
-    "Turmeric": "Turmeric___"
+    "Tomato": "Tomato___"
 }
 
-# Supported crop display names
+# Supported crop display names strictly matching the validated MobileNetV2 classes
 SUPPORTED_CROPS = list(CROP_TO_DISEASE_PREFIX.keys())
 
 CROP_MODEL_PATH = os.path.join(MODEL_DIR, "crop_classifier_model.pth")
@@ -1067,48 +1532,51 @@ class CropHealthModelManager:
         else:
             effective_part = plant_part.strip()
 
-        # Plant-Part Routing: Fruit/vegetable/seed/stem have no validated CNN models in models/crop_health
+        # Produce & Plant-Part Validation:
+        # The MobileNetV2 models are trained strictly on foliar leaf specimens (14 crops, 38 leaf pathologies).
+        # Non-leaf plant parts (Fruit, Vegetable, Tuber, Seed, Stem, Pest) cannot be reliably evaluated by the leaf CNN.
         if effective_part not in ["Leaf", "Whole plant"]:
             return {
                 "status": "UNSUPPORTED",
                 "analysis_status": "UNSUPPORTED",
-                "reason": "No validated model is available for this plant part.",
-                "plant_part": effective_part,
-                "image_type": effective_part,
+                "reason": f"Local MobileNetV2 models are calibrated exclusively for foliar leaf tissue. Plant part '{effective_part}' is not supported by this offline model.",
                 "identified_crop": "UNKNOWN",
                 "crop_name": "UNKNOWN",
                 "detected_crop": "Unknown",
                 "crop": "UNKNOWN",
-                "disease": f"Not Supported for {effective_part}",
-                "disease_name": f"Not Supported for {effective_part}",
-                "detected_problem": f"Not Supported for {effective_part}",
-                "condition": f"Not Supported for {effective_part}",
-                "health_status": "Not Supported",
                 "crop_confidence": None,
-                "disease_confidence": None,
                 "confidence": None,
                 "identification_confidence": None,
                 "condition_confidence": None,
+                "disease_confidence": None,
+                "plant_part": effective_part,
+                "image_type": effective_part,
+                "disease": "Not Evaluated",
+                "disease_name": "Unsupported Plant Part",
+                "detected_problem": "Unsupported Plant Part",
+                "condition": "Not Evaluated",
+                "health_status": "Not Supported",
                 "severity": "Unknown",
-                "recommendation": f"No validated model is available for {effective_part}. Please upload a clear photo of the crop leaf or plant canopy for validated analysis.",
-                "recommended_next_steps": f"No validated model is available for {effective_part}. Please upload a clear photo of the crop leaf or plant canopy for validated analysis.",
-                "recommended_actions": ["Upload a clear photo of the crop leaf or plant canopy."],
-                "message": "No validated model is available for this plant part.",
-                "visual_observations": [f"Plant part '{effective_part}' is not supported by the validated CNN models."],
-                "visible_symptoms": f"Plant part '{effective_part}' is not supported by the validated CNN models.",
-                "explanation": f"Plant part '{effective_part}' is not supported by the validated CNN models.",
+                "recommendation": f"Please provide a clear foliar leaf photo of the crop, or ensure the multimodal vision service is active to analyze {effective_part.lower()}.",
+                "recommended_next_steps": "Capture a close-up photo of the crop leaf under daylight.",
+                "recommended_actions": [f"Capture a close-up photo of the crop leaf under daylight."],
+                "message": f"Local CNN model does not support plant part '{effective_part}'. It is trained exclusively on foliar leaf specimens.",
+                "visual_observations": [f"Input plant part '{effective_part}' is outside the training distribution of the foliar leaf classifier."],
+                "visible_symptoms": f"Plant part '{effective_part}' is outside the foliar leaf model scope.",
+                "explanation": f"The local MobileNetV2 model was trained exclusively on PlantVillage leaf specimens. Evaluating non-leaf parts with this model would produce fabricated results.",
                 "possible_causes": ["Unsupported plant part."],
-                "prevention": "Focus diagnostic scans on crop foliage or whole-plant vegetative canopy.",
-                "monitoring_plan": "Scout crop leaves regularly for early foliar pathology signs.",
+                "prevention": "Ensure foliar leaf images are submitted to the local crop health model.",
+                "monitoring_plan": "Scout leaves of the crop for health assessment.",
                 "trend_status": "Baseline",
                 "weather_correlation": None,
                 "fertilizer_link": False,
                 "contact_expert": False,
-                "is_unclear": True,
+                "is_unclear": False,
                 "analysis_method": "CNN (Validated)",
                 "model_status": "Loaded",
                 "needs_field_verification": True,
-                "farmer_guidance": "Please upload a clear photo of the crop leaf or whole plant canopy for AI analysis.",
+                "crop_verified": False,
+                "farmer_guidance": "Please upload a clear leaf image for local AI pathology diagnosis.",
                 "top_predictions": []
             }
 

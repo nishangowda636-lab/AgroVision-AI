@@ -1,7 +1,12 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
+from dotenv import load_dotenv
+
+_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_env_path = os.path.join(_base_dir, ".env")
+if os.path.exists(_env_path):
+    load_dotenv(_env_path)
+else:
+    load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,8 +22,12 @@ from app.routers import (
 )
 
 # Initialize database tables and run schema auto-migrations
-Base.metadata.create_all(bind=engine)
-run_auto_migrations()
+try:
+    Base.metadata.create_all(bind=engine)
+    run_auto_migrations()
+except Exception as e:
+    import logging
+    logging.getLogger("uvicorn.error").warning(f"Database initialization deferred: {e}")
 
 app = FastAPI(
     title="AgroVision AI API",
