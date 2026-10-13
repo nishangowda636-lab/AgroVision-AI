@@ -500,6 +500,19 @@ export default function CropHealthPage() {
                         <h2 className={`text-xl font-bold font-heading ${!isConfirmed ? 'text-amber-300' : 'text-[#F3F7F5]'}`}>
                           {diseaseName}
                         </h2>
+                        {isServiceUnavailable && (
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              disabled={analyzing}
+                              onClick={handleAnalyze}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#10B981] text-[#061811] text-xs font-bold hover:bg-[#10B981]/90 transition-all cursor-pointer shadow-sm"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
+                              <span>{analyzing ? 'Retrying Diagnosis...' : 'Retry Diagnosis'}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-right">
@@ -727,6 +740,19 @@ export default function CropHealthPage() {
                             : `Upload a clear photo of the crop ${activePart.toLowerCase()} holding camera steady under daylight.`
                         )}
                       </p>
+                      {isServiceUnavailable && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            disabled={analyzing}
+                            onClick={handleAnalyze}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#10B981] text-[#061811] text-xs font-bold hover:bg-[#10B981]/90 transition-all cursor-pointer shadow-sm"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
+                            <span>{analyzing ? 'Retrying Diagnosis...' : 'Retry Diagnosis'}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Weather Consideration */}

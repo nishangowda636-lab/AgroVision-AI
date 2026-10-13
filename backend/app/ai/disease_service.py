@@ -33,8 +33,12 @@ import requests
 import cv2
 import numpy as np
 from PIL import Image
+import time
+import logging
 from typing import Dict, Any, List, Optional, Tuple
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 _base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _env_path = os.path.join(_base_dir, ".env")
@@ -224,8 +228,8 @@ def detect_plant_part_heuristics(image_path: str) -> str:
     raw_rhizome = cv2.inRange(hsv, np.array([13, 25, 110]), np.array([28, 145, 245]))
     rhizome_ratio, rhizome_max_area = get_clean_mask_ratio(raw_rhizome, total_px)
 
-    # Priority A: Earthy Potato Tubers (Freshly harvested tubers resting in soil or with canopy haulm)
-    if tuber_count >= 2 or (tuber_ratio >= 0.20 and soil_ratio >= 0.15):
+    # Priority A: Earthy Potato Tubers (Freshly harvested tubers resting in soil with high tuber and soil coverage)
+    if (tuber_count >= 2 and tuber_ratio >= 0.15 and soil_ratio >= 0.08) or (tuber_ratio >= 0.25 and soil_ratio >= 0.12):
         return "Vegetable (Tuber)"
 
     # Priority B: Distinct Carrot / Orange Root Vegetable
@@ -241,7 +245,7 @@ def detect_plant_part_heuristics(image_path: str) -> str:
         return "Vegetable (Rhizome)"
 
     # Priority E: Distinct Yellow Maize / Corn Seed or Citrus Fruit
-    if yellow_ratio >= 0.12 and green_ratio < 0.20 and rhizome_ratio < 0.06:
+    if yellow_ratio >= 0.08 and green_ratio < 0.30 and rhizome_ratio < 0.06:
         return "Seed"
 
     # Priority F: Purple Produce / Bulb (Onion, Shallot, Eggplant, Purple Tuber)
@@ -249,18 +253,18 @@ def detect_plant_part_heuristics(image_path: str) -> str:
         return "Vegetable (Bulb)"
 
     # Priority G: Whole Plant (Standing vegetative canopy in field, where canopy dominates and no large foreground produce)
-    if rhizome_ratio < 0.06 and tuber_ratio < 0.06 and orange_ratio < 0.08 and tuber_count < 2:
+    if rhizome_ratio < 0.06 and tuber_ratio < 0.10 and orange_ratio < 0.08 and tuber_count < 2:
         if (red_ratio >= 0.05 and green_ratio >= 0.25) or (purple_ratio >= 0.05 and green_ratio >= 0.25) or (yellow_ratio >= 0.10 and green_ratio >= 0.30):
             return "Whole plant"
 
     # Priority H: Foliar Leaf (Close-up single leaf or foliar tissue)
-    if green_ratio >= 0.18 and rhizome_ratio < 0.06 and tuber_ratio < 0.06 and tuber_count < 2:
+    if green_ratio >= 0.16 and rhizome_ratio < 0.06 and tuber_ratio < 0.10:
         return "Leaf"
 
     # Fallback checks
-    if tuber_count >= 2 or tuber_ratio > 0.06:
+    if (tuber_count >= 2 and tuber_ratio >= 0.12 and soil_ratio >= 0.06) or (tuber_ratio >= 0.25 and soil_ratio >= 0.05):
         return "Vegetable (Tuber)"
-    if rhizome_ratio > 0.05 and yellow_ratio >= 0.03:
+    if rhizome_ratio > 0.06 and yellow_ratio >= 0.03:
         return "Vegetable (Rhizome)"
     if orange_ratio > 0.08:
         return "Vegetable (Root Crop)"
@@ -402,44 +406,60 @@ Return ONLY valid JSON matching this schema:
 }}"""
         parts_payload.append({"text": prompt_text})
 
-        # Try active, supported Google Gemini models with fast fallback
+        # Try active, supported Google Gemini models with fast fallback and automatic retry
         models_to_try = [
             "gemini-3.5-flash-lite",
-            "gemini-3.5-flash"
+            "gemini-3.8-flash",
+            "gemini-3.5-flash",
+            "gemini-flash-latest",
+            "gemini-flash-lite-latest",
+            "gemini-3.1-flash-lite",
         ]
         for model_name in models_to_try:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                payload = {
-                    "contents": [{"parts": parts_payload}],
-                    "generationConfig": {
-                        "temperature": 0.1,
-                        "maxOutputTokens": 1024,
-                        "responseMimeType": "application/json"
+            for attempt in range(2):
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                    payload = {
+                        "contents": [{"parts": parts_payload}],
+                        "generationConfig": {
+                            "temperature": 0.1,
+                            "maxOutputTokens": 1024,
+                            "responseMimeType": "application/json"
+                        }
                     }
-                }
-                res = requests.post(url, json=payload, timeout=12.0)
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        raw_text = candidates[0].get("content", {}).get("parts", [])[0].get("text", "")
-                        clean_text = raw_text.strip()
-                        if clean_text.startswith("```json"):
-                            clean_text = clean_text[7:]
-                        if clean_text.startswith("```"):
-                            clean_text = clean_text[3:]
-                        if clean_text.endswith("```"):
-                            clean_text = clean_text[:-3]
-                        parsed = json.loads(clean_text.strip())
-                        if isinstance(parsed, list) and len(parsed) > 0:
-                            parsed = parsed[0]
-                        if isinstance(parsed, dict) and parsed.get("crop_name"):
-                            parsed["analysis_method"] = "Gemini Vision"
-                            parsed["analysis_source"] = "Gemini Vision"
-                            return parsed
-            except Exception:
-                continue
+                    res = requests.post(url, json=payload, timeout=20.0)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            raw_text = candidates[0].get("content", {}).get("parts", [])[0].get("text", "")
+                            clean_text = raw_text.strip()
+                            if clean_text.startswith("```json"):
+                                clean_text = clean_text[7:]
+                            if clean_text.startswith("```"):
+                                clean_text = clean_text[3:]
+                            if clean_text.endswith("```"):
+                                clean_text = clean_text[:-3]
+                            parsed = json.loads(clean_text.strip())
+                            if isinstance(parsed, list) and len(parsed) > 0:
+                                parsed = parsed[0]
+                            if isinstance(parsed, dict) and parsed.get("crop_name"):
+                                parsed["analysis_method"] = "Gemini Vision"
+                                parsed["analysis_source"] = "Gemini Vision"
+                                return parsed
+                    elif res.status_code in [429, 503] and attempt == 0:
+                        logger.warning(f"[GeminiVision] Model {model_name} returned {res.status_code} ({res.text[:100]}). Retrying in 1s...")
+                        time.sleep(1.0)
+                        continue
+                    else:
+                        logger.warning(f"[GeminiVision] Model {model_name} returned status {res.status_code}: {res.text[:120]}")
+                        break
+                except Exception as ex:
+                    logger.warning(f"[GeminiVision] Model {model_name} attempt {attempt+1} exception: {ex}")
+                    if attempt == 0:
+                        time.sleep(0.8)
+                        continue
+                    break
 
     except Exception as e:
         print(f"[GeminiVision] Multimodal API call failed or timed out: {e}")
@@ -819,40 +839,57 @@ def analyze_plant_image(
             final_res = _format_gemini_single_result(gemini_res, effective_part)
             final_res["analysis_method"] = "Gemini Vision"
         else:
-            # Vision service unavailable / unconfigured; offline CNN cannot evaluate non-leaf parts
+            # Check if image has foliar green features or if the crop is supported by the offline model
             cv_metrics = _extract_cv_image_metrics(image_path)
-            err_status = "SERVICE_UNAVAILABLE" if api_key else "UNSUPPORTED"
-            final_res = {
-                "status": err_status,
-                "analysis_status": err_status,
-                "identified_crop": "UNKNOWN",
-                "crop_name": "UNKNOWN",
-                "detected_crop": "Unknown",
-                "crop": "UNKNOWN",
-                "crop_confidence": None,
-                "confidence": None,
-                "disease_confidence": None,
-                "identification_confidence": None,
-                "condition_confidence": None,
-                "plant_part": effective_part,
-                "image_type": effective_part,
-                "disease": "Not Evaluated",
-                "disease_name": "Unsupported Plant Part",
-                "detected_problem": "Unsupported Plant Part",
-                "condition": "Not Evaluated",
-                "health_status": "Not Supported",
-                "severity": "Unknown",
-                "reason": f"Local MobileNetV2 models evaluate foliar leaves exclusively. Plant part '{effective_part}' requires multimodal vision analysis, which is currently unavailable.",
-                "message": f"Plant part '{effective_part}' is not supported by the offline foliar model. Multimodal vision service is required.",
-                "recommendation": f"Upload a clear leaf photo for the offline model, or ensure Gemini Vision service is active for {effective_part.lower()} diagnosis.",
-                "recommended_actions": ["Upload a clear foliar leaf photo under daylight."],
-                "visual_observations": [f"Input plant part '{effective_part}' is outside the offline leaf model scope."],
-                "analysis_method": "Offline Scope Filter",
-                "model_status": "Active",
-                "needs_field_verification": True,
-                "crop_verified": False,
-                "top_predictions": []
-            }
+            offline_fallback_result = None
+            if model_mgr.is_loaded and (cv_metrics.get("green_ratio", 0) >= 0.12 or (target_crop_clean and any(target_crop_clean.lower() == sc.lower() for sc in model_mgr.crop_classes))):
+                try:
+                    offline_pred = model_mgr.predict_image(image_path, plant_part="Leaf")
+                    if offline_pred.get("status") == "VALID_RESULT":
+                        offline_fallback_result = offline_pred
+                        offline_fallback_result["plant_part"] = effective_part
+                        offline_fallback_result["analysis_method"] = "Offline Foliar Model (Fallback)"
+                        offline_fallback_result.setdefault("warnings", []).append(
+                            "Multimodal cloud vision service was momentarily busy; processed with local offline model."
+                        )
+                except Exception as ex:
+                    logger.warning(f"Offline fallback attempt failed: {ex}")
+
+            if offline_fallback_result:
+                final_res = offline_fallback_result
+            else:
+                err_status = "SERVICE_UNAVAILABLE" if api_key else "UNSUPPORTED"
+                final_res = {
+                    "status": err_status,
+                    "analysis_status": err_status,
+                    "identified_crop": target_crop_clean or "UNKNOWN",
+                    "crop_name": target_crop_clean or "UNKNOWN",
+                    "detected_crop": target_crop_clean or "Unknown",
+                    "crop": target_crop_clean or "UNKNOWN",
+                    "crop_confidence": None,
+                    "confidence": None,
+                    "disease_confidence": None,
+                    "identification_confidence": None,
+                    "condition_confidence": None,
+                    "plant_part": effective_part,
+                    "image_type": effective_part,
+                    "disease": "Vision Service Busy",
+                    "disease_name": "Vision Service Temporarily Busy",
+                    "detected_problem": "Vision Service Temporarily Busy",
+                    "condition": "Vision Service Temporarily Busy",
+                    "health_status": "Temporarily Busy",
+                    "severity": "Unknown",
+                    "reason": f"Multimodal vision service encountered a temporary capacity spike while analyzing '{effective_part}'. Please click Retry Diagnosis.",
+                    "message": f"Multimodal vision service is temporarily busy for plant part '{effective_part}'. Please click Retry Diagnosis or upload a leaf photo.",
+                    "recommendation": f"Google Gemini Vision is temporarily under high demand. Please click 'Retry Diagnosis' or provide a clear foliar leaf photo.",
+                    "recommended_actions": ["Click 'Retry Diagnosis' below to resubmit the scan.", "Alternatively, upload a clear foliar leaf photo under daylight."],
+                    "visual_observations": [f"Plant part detected as '{effective_part}'.", "Cloud vision service encountered a temporary traffic spike from provider."],
+                    "analysis_method": "Multimodal Vision (Retry Available)",
+                    "model_status": "Active",
+                    "needs_field_verification": True,
+                    "crop_verified": False,
+                    "top_predictions": []
+                }
 
     # Extract core response attributes
     status = final_res.get("status") or final_res.get("analysis_status") or "VALID_RESULT"
